@@ -137,4 +137,10 @@ function MenuState:keypressed(key, scancode, isrepeat)
 	end
 end
 
+function MenuState:mousepressed(x, y, button, istouch)
+    if button == 1 then
+        self:keypressed("return") -- reaproveita a lógica do teclado
+    end
+end
+
 return MenuState

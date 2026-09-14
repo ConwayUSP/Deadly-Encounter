@@ -61,4 +61,10 @@ function DeathState:keypressed(key, scancode, isrepeat)
 	end
 end
 
+function DeathState:mousepressed(x, y, button, istouch)
+    if button == 1 and self.readyToPlay then
+        self.screen:keypressed("return")
+    end
+end
+
 return DeathState

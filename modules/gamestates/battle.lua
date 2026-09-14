@@ -1108,4 +1108,67 @@ function BattleState:shuffleActionSlots()
 	end
 end
 
+function BattleState:mousepressed(x, y, button, istouch)
+    if not self.actionsEnabled then return end
+    if button ~= 1 then return end
+
+    -- verifica clique nos botões de ação
+    for i, slot in pairs(self.actionSlots) do
+        if not slot.disabled then
+            local w = slot.socket:getWidth() * slot.scale
+            local h = slot.socket:getHeight() * slot.scale
+            local startX = slot.pos[1] - w / 2
+            local startY = slot.pos[2] - h / 2
+            
+            if isPointInRect(x, y, startX, startY, w, h) then
+                self:setAction(i)
+                return
+            end
+        end
+    end
+
+    -- verifica clique nos itens
+    if self.itemSlots then
+        local socketW = self.itemSlots.socket:getWidth() * self.itemSlots.scale
+        local socketH = self.itemSlots.socket:getHeight() * self.itemSlots.scale
+        local itemScale = 0.25
+        local pos = self.itemSlots.pos
+
+        local function checkItemClick(item, offsetX, offsetY)
+            if item and item.quantity > 0 then
+                local itemW = item.sprite:getWidth() * itemScale
+                local itemH = item.sprite:getHeight() * itemScale
+
+                local itemX = pos[1] + offsetX - itemW / 2
+                local itemY = pos[2] + offsetY - itemH / 2
+
+                -- padding de 12 pixels para facilitar o clique no celular / mouse
+                local padding = 12 
+
+                if isPointInRect(x, y, itemX - padding, itemY - padding, itemW + padding * 2, itemH + padding * 2) then
+                    return true
+                end
+            end
+            return false
+        end
+
+        -- uso de itens
+        if checkItemClick(Player.inventory.items[1], -socketW / 4 + 4, -socketH / 4 + 8) then
+            Player:useBuff(Player.inventory.items[1])
+            self.sounds.select:play()
+            return
+        end
+        if checkItemClick(Player.inventory.items[2], -socketW / 4 + 4, socketH / 4) then
+            Player:useBuff(Player.inventory.items[2])
+            self.sounds.select:play()
+            return
+        end
+        if checkItemClick(Player.inventory.items[3], socketW / 4 - 8, 0) then
+            Player:useBuff(Player.inventory.items[3])
+            self.sounds.select:play()
+            return
+        end
+    end
+end
+
 return BattleState

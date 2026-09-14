@@ -551,4 +551,35 @@ function ShopState:draw()
 	love.graphics.setColor(1, 1, 1)
 end
 
+function ShopState:mousepressed(x, y, button, istouch)
+    if self.buyed or button ~= 1 then return end
+    
+    for i, slot in ipairs(self.slots) do
+        local w = slot.frameW
+        local h = slot.frameH
+        local startX = slot.position.x - w / 2
+        local startY = slot.position.y + slot.ropeH - 20
+        
+        if isPointInRect(x, y, startX, startY, w, h) then
+            -- se já estava selecionado, compra o item
+            if self.selectedItemIndex == i then
+                local selectedItem = self.itemsForSale[self.selectedItemIndex]
+                if selectedItem then
+                    self:buyItem(selectedItem, self.selectedItemIndex)
+                    self:setPurchasedSlots(Player.inventory.items)
+                    self.buyed = true
+                    self.selectedItemIndex = 0
+                    self.timer = 2
+                    self.sounds.buy:play()
+                end
+            else
+                -- caso contrário, apenas seleciona
+                self:selectItem(i)
+                self:selectItemSlot(i)
+            end
+            return
+        end
+    end
+end
+
 return ShopState

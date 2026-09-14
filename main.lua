@@ -66,3 +66,11 @@ function love.keypressed(key, scancode, isrepeat)
 
 	GAMESTATE[GameCtx]:keypressed(key, scancode, isrepeat)
 end
+
+function love.mousepressed(x, y, button, istouch, presses)
+    if MainTransition.isActive then return end
+
+    if GAMESTATE[GameCtx].mousepressed then
+        GAMESTATE[GameCtx]:mousepressed(x, y, button, istouch)
+    end
+end
