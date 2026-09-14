@@ -35,6 +35,22 @@ Combat.queuedSounds = {}
 Combat.queuedSoundsBySource = {}
 Combat.baseVolumes = {}
 
+function Combat.applyHealthMuffle(sound)
+	local healthRatio = math.max(0, math.min(1, Player.hp / Player.maxHp))
+	local muffleAmount = (1 - healthRatio) ^ 2
+
+	sound:setFilter({
+		type = "lowpass",
+		volume = 1,
+		highgain = 1 - 0.95 * muffleAmount,
+	})
+end
+
+function Combat.playBattleSound(sound)
+	Combat.applyHealthMuffle(sound)
+	sound:play()
+end
+
 function Combat.beginSoundRound()
 	Combat.queuedSounds = {}
 	Combat.queuedSoundsBySource = {}
@@ -70,7 +86,7 @@ function Combat.playQueuedSounds()
 		local volumeMultiplier = queuedSound.priority > highestPriority and 0.2 or 1
 		local sound = queuedSound.sound
 		sound:setVolume(Combat.baseVolumes[sound] * volumeMultiplier)
-		sound:play()
+		Combat.playBattleSound(sound)
 	end
 end
 

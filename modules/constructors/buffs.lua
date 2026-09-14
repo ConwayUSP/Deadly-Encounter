@@ -26,7 +26,7 @@ function initParry()
 	local func = function(criatura, ammo)
 		criatura.ammo = criatura.ammo + ammo
 		GAMESTATE[CTX.BATTLE]:addPlusAmmoText(criatura, ammo)
-		buffSounds[UPGRADE.PARRY]:play()
+		Combat.playBattleSound(buffSounds[UPGRADE.PARRY])
 	end
 
 	return ItemUpgrade.new(UPGRADE.PARRY, desc, func, BUFF_TYPE.UPGRADE)
@@ -51,7 +51,7 @@ function initDefibrillator(restoreHp)
 		criatura.hp = restoreHp or 20
 		criatura.defibrilated = true
 		criatura.inventory:removeUpgrade(UPGRADE.DEFIBRILLATOR)
-		buffSounds[UPGRADE.DEFIBRILLATOR]:play()
+		Combat.playBattleSound(buffSounds[UPGRADE.DEFIBRILLATOR])
 	end
 
 	return ItemUpgrade.new(UPGRADE.DEFIBRILLATOR, desc, func, BUFF_TYPE.UPGRADE)
@@ -79,7 +79,7 @@ function initTotem()
 		if math.random() < CHANCE then
 			criatura.ammo = criatura.ammo + ammo
 			GAMESTATE[CTX.BATTLE]:addPlusAmmoText(criatura, ammo)
-			buffSounds[UPGRADE.LUCKY_TOTEM]:play()
+			Combat.playBattleSound(buffSounds[UPGRADE.LUCKY_TOTEM])
 		end
 	end
 
@@ -94,7 +94,7 @@ function initStopWatch()
 		if time < 0.25 and not criatura.timedRight then
 			criatura.dmgMult = criatura.dmgMult + 0.3
 			criatura.timedRight = true
-			buffSounds[UPGRADE.STOPWATCH]:play()
+			Combat.playBattleSound(buffSounds[UPGRADE.STOPWATCH])
 		end
 	end
 
@@ -112,7 +112,7 @@ function initFlashbang(quantity)
 	local func = function(criatura, alvo)
 		alvo.action = ACTION.MISS
 		alvo.blinded = true
-		buffSounds[ITEM.FLASHBANG]:play()
+		Combat.playBattleSound(buffSounds[ITEM.FLASHBANG])
 	end
 
 	return ItemUpgrade.new(ITEM.FLASHBANG, desc, func, BUFF_TYPE.ITEM, qnt)
@@ -124,7 +124,7 @@ function initPotion(quantity)
 	local qnt = quantity or 3
 	local func = function(criatura)
 		cure(criatura)
-		buffSounds[ITEM.POTION]:play()
+		Combat.playBattleSound(buffSounds[ITEM.POTION])
 	end
 
 	return ItemUpgrade.new(ITEM.POTION, desc, func, BUFF_TYPE.ITEM, qnt)
@@ -137,7 +137,7 @@ function initEnergyDrink(quantity)
 
 	local func = function(criatura)
 		criatura.dmgMult = criatura.dmgMult + 0.5
-		buffSounds[ITEM.ENERGY_DRINK]:play()
+		Combat.playBattleSound(buffSounds[ITEM.ENERGY_DRINK])
 	end
 
 	return ItemUpgrade.new(ITEM.ENERGY_DRINK, desc, func, BUFF_TYPE.ITEM, qnt)

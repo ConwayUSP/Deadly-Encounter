@@ -866,7 +866,7 @@ function BattleState:update(dt)
 		-- count chegou a 0 -> shoot
 		if self.timer <= 0 then
 			self.counter:setCounter(self.sprites.shoot)
-			self.sounds.counterShoot:play()
+			Combat.playBattleSound(self.sounds.counterShoot)
 			self.turn = self.turn + 1
 			self:simulateBattle()
 
@@ -899,7 +899,7 @@ function BattleState:update(dt)
 		for _, counter in ipairs(COUNTER_TIMINGS) do
 			if pt > counter.time and self.timer <= counter.time then
 				self.counter:setCounter(self.sprites[counter.number])
-				self.sounds[counter.sound]:play()
+				Combat.playBattleSound(self.sounds[counter.sound])
 			end
 		end
 	else
@@ -1062,7 +1062,7 @@ function BattleState:keypressed(key, scancode, isrepeat)
 		local itemIndex = num - 5
 		if Player.inventory.items[itemIndex] then
 			Player:useBuff(Player.inventory.items[itemIndex])
-			self.sounds.select:play()
+			Combat.playBattleSound(self.sounds.select)
 		end
 	end
 end
@@ -1094,13 +1094,13 @@ function BattleState:setAction(num)
 	end
 
 	if num ~= 0 then
-		self.sounds.select:play()
+		Combat.playBattleSound(self.sounds.select)
 	end
 end
 
 function BattleState:shuffleActionSlots()
 	local usedIndexes = {}
-	self.sounds.shuffle:play()
+	Combat.playBattleSound(self.sounds.shuffle)
 	for _, slot in pairs(self.actionSlots) do
 		local newIndex = math.random(1, 5)
 		while usedIndexes[newIndex] do
@@ -1159,17 +1159,17 @@ function BattleState:mousepressed(x, y, button, istouch)
         -- uso de itens
         if checkItemClick(Player.inventory.items[1], -socketW / 4 + 4, -socketH / 4 + 8) then
             Player:useBuff(Player.inventory.items[1])
-            self.sounds.select:play()
+            Combat.playBattleSound(self.sounds.select)
             return
         end
         if checkItemClick(Player.inventory.items[2], -socketW / 4 + 4, socketH / 4) then
             Player:useBuff(Player.inventory.items[2])
-            self.sounds.select:play()
+            Combat.playBattleSound(self.sounds.select)
             return
         end
         if checkItemClick(Player.inventory.items[3], socketW / 4 - 8, 0) then
             Player:useBuff(Player.inventory.items[3])
-            self.sounds.select:play()
+            Combat.playBattleSound(self.sounds.select)
             return
         end
     end
