@@ -13,10 +13,83 @@ Combat.sounds = {
 	DEATH_03 = love.audio.newSource("sounds/death_03.mp3", "static"),
 	DEATH_BOSS = love.audio.newSource("sounds/death_boss.mp3", "static"),
 	COUNTER = love.audio.newSource("sounds/counter.mp3", "static"),
-	-- ATTACK = love.audio.newSource("sounds/attack.mp3", "static"),
-	-- HEAVY_ATTACK = love.audio.newSource("sounds/heavy_attack.mp3", "static"),
-	-- RELOAD = love.audio.newSource("sounds/reload.mp3", "static")
+	RELOAD = love.audio.newSource("sounds/reload.mp3", "static"),
+	DEFENSE = love.audio.newSource("sounds/defense.mp3", "static"),
+	ATTACK_01 = love.audio.newSource("sounds/attack_01.mp3", "static"),
+	ATTACK_02 = love.audio.newSource("sounds/attack_02.mp3", "static"),
+	-- ATTACK_03 = love.audio.newSource("sounds/attack_03.mp3", "static"),
+	HEAVY_ATTACK_01 = love.audio.newSource("sounds/heavy_attack_01.mp3", "static"),
+	HEAVY_ATTACK_02 = love.audio.newSource("sounds/heavy_attack_02.mp3", "static"),
+	-- HEAVY_ATTACK_03 = love.audio.newSource("sounds/heavy_attack_03.mp3", "static"),
 }
+
+Combat.soundPriority = {
+	DEATH = 1,
+	COUNTER = 2,
+	HEAVY_ATTACK = 3,
+	ATTACK = 4,
+	DEFENSE = 5,
+	RELOAD = 6,
+}
+Combat.queuedSounds = {}
+Combat.queuedSoundsBySource = {}
+Combat.baseVolumes = {}
+
+function Combat.beginSoundRound()
+	Combat.queuedSounds = {}
+	Combat.queuedSoundsBySource = {}
+end
+
+-- enfileira os sons por prioridade
+function Combat.queueSound(sound, priority)
+	-- armazena volume inicial
+	if not Combat.baseVolumes[sound] then
+		Combat.baseVolumes[sound] = sound:getVolume()
+	end
+
+	-- se já existe, não adiciona de novo na fila
+	local queuedSound = Combat.queuedSoundsBySource[sound]
+	if queuedSound then return end
+
+	queuedSound = { sound = sound, priority = priority }
+	table.insert(Combat.queuedSounds, queuedSound)
+	Combat.queuedSoundsBySource[sound] = queuedSound
+end
+
+-- toca as músicas enfileiradas
+function Combat.playQueuedSounds()
+	local highestPriority = Combat.soundPriority.RELOAD
+
+	-- descobre que tem a menor prioridade (menor numero)
+	for _, queuedSound in ipairs(Combat.queuedSounds) do
+		highestPriority = math.min(highestPriority, queuedSound.priority)
+	end
+
+	-- itera sobre a fila e quem tiver menor prioridade é tocado com volume menor
+	for _, queuedSound in ipairs(Combat.queuedSounds) do
+		local volumeMultiplier = queuedSound.priority > highestPriority and 0.2 or 1
+		local sound = queuedSound.sound
+		sound:setVolume(Combat.baseVolumes[sound] * volumeMultiplier)
+		sound:play()
+	end
+end
+
+local function attackSoundKey(prefix, variation)
+	return string.format("%s_%02d", prefix, tonumber(variation) or 1)
+end
+
+-- associa uma criatura a um som de ataque
+function Combat.assimilateAttacks(creature, attackVariation, heavyAttackVariation)
+	creature.attackSound = Combat.sounds[attackSoundKey("ATTACK", attackVariation)]
+	creature.heavyAttackSound = Combat.sounds[attackSoundKey("HEAVY_ATTACK", heavyAttackVariation)]
+end
+
+-- infileira o som de ataque
+function Combat.playAttackSound(creature, isHeavyAttack)
+	local sound = isHeavyAttack and creature.heavyAttackSound or creature.attackSound
+	local priority = isHeavyAttack and Combat.soundPriority.HEAVY_ATTACK or Combat.soundPriority.ATTACK
+	Combat.queueSound(sound, priority)
+end
 
 ----------------------------------------
 -- Funções de combate
@@ -24,6 +97,7 @@ Combat.sounds = {
 
 -- simula um turno do combate, retornando o resultado do combate após o turno
 function simulateTurn(player, oponent, hist)
+	Combat.beginSoundRound()
 	oponent:setAction(oponent:makeDecision(player, hist))
 
 	useItems(player, oponent)
@@ -45,7 +119,9 @@ function simulateTurn(player, oponent, hist)
 	applyAction(player, oponent)
 	applyAction(oponent, player)
 
-	return combatResult(player, oponent)
+	local result = combatResult(player, oponent)
+	Combat.playQueuedSounds()
+	return result
 end
 
 -- retorna true se a ação for inválida, false caso contrário
@@ -85,19 +161,21 @@ function applyAction(attacker, target)
 	if attackerAction == ACTION.RECHARGE then
 		reload(attacker)
 	elseif attackerAction == ACTION.ATK then
+		Combat.playAttackSound(attacker, false)
 		if targetAction == ACTION.COUNTER then
 			attack(attacker, attacker)
 			spendAmmo(attacker)
-			Combat.sounds.COUNTER:play()
+			Combat.queueSound(Combat.sounds.COUNTER, Combat.soundPriority.COUNTER)
 		else
 			attack(target, attacker)
 			spendAmmo(attacker)
 		end
 	elseif attackerAction == ACTION.HEAVY_ATK then
+		Combat.playAttackSound(attacker, true)
 		if targetAction == ACTION.COUNTER then
 			heavyAttack(attacker, attacker)
 			spendAmmo(attacker)
-			Combat.sounds.COUNTER:play()
+			Combat.queueSound(Combat.sounds.COUNTER, Combat.soundPriority.COUNTER)
 		else
 			heavyAttack(target, attacker)
 			spendAmmo(attacker)
@@ -106,6 +184,7 @@ function applyAction(attacker, target)
 		attacker.counters = attacker.counters - 1
 	elseif attackerAction == ACTION.DEFENSE then
 		attacker.defCount = attacker.defCount + 1
+		Combat.queueSound(Combat.sounds.DEFENSE, Combat.soundPriority.DEFENSE)
 	end
 
 	if attackerAction ~= ACTION.DEFENSE then
@@ -138,17 +217,14 @@ end
 
 function reload(creature)
 	creature.ammo = creature.ammo + 1
-	-- TODO: som recarregar
+	Combat.queueSound(Combat.sounds.RELOAD, Combat.soundPriority.RELOAD)
 end
 
 function attack(target, attacker)
 	if target.action ~= ACTION.DEFENSE then
 		causeDamage(target, 40, attacker)
 	else
-		local parry = target:hasUpgrade(UPGRADE.PARRY)
-		if parry then
-			parry:activate(target, 1)
-		end
+		defense(target)
 	end
 end
 
@@ -156,11 +232,15 @@ function heavyAttack(target, attacker)
 	if target.action ~= ACTION.DEFENSE then
 		causeDamage(target, 80, attacker)
 	else
-		local parry = target:hasUpgrade(UPGRADE.PARRY)
-		if parry then
-			parry:activate(target, 1)
-		end
+		defense(target)
 		causeDamage(target, 30, attacker)
+	end
+end
+
+function defense(target)
+	local parry = target:hasUpgrade(UPGRADE.PARRY)
+	if parry then
+		parry:activate(target, 1)
 	end
 end
 
@@ -199,7 +279,9 @@ function causeDamage(target, dmg, attacker)
 	if target.shielded then
 		target.shielded = false
 		GAMESTATE[CTX.BATTLE]:onShieldBroken(target)
-		Combat.sounds.SHIELD_BREAK:play()
+		local priority = attacker.action == ACTION.HEAVY_ATK and Combat.soundPriority.HEAVY_ATTACK
+			or Combat.soundPriority.ATTACK
+		Combat.queueSound(Combat.sounds.SHIELD_BREAK, priority)
 
 		return
 	end
@@ -222,14 +304,14 @@ function causeDamage(target, dmg, attacker)
 			target.action = ACTION.DEAD
 
 			if target.name == Oponents.ABERRATION then
-				Combat.sounds.DEATH_BOSS:play()
+				Combat.queueSound(Combat.sounds.DEATH_BOSS, Combat.soundPriority.DEATH)
 			else
 				local deathSounds = {
 					Combat.sounds.DEATH_01,
 					Combat.sounds.DEATH_02,
 					Combat.sounds.DEATH_03,
 				}
-				deathSounds[math.random(#deathSounds)]:play()
+				Combat.queueSound(deathSounds[math.random(#deathSounds)], Combat.soundPriority.DEATH)
 			end
 		end
 	else

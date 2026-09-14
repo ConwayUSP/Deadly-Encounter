@@ -4,7 +4,7 @@
 require("modules.engine.animation")
 require("modules.constructors.oponents")
 require("modules.inventory")
-require("modules.constructors.oponents")
+require("modules.combat")
 
 ----------------------------------------
 -- Classe Oponente
@@ -19,7 +19,7 @@ Oponent.shakeY = 0
 
 Oponent.TRANSITION_DUR = 0.15
 
-function Oponent.new(name, maxHP, maxCounters, items, upgrades, strategyFunc)
+function Oponent.new(name, maxHP, maxCounters, items, upgrades, strategyFunc, attackVariation, heavyAttackVariation)
 	local oponent = setmetatable({}, Oponent)
 
 	oponent.name = name
@@ -41,6 +41,7 @@ function Oponent.new(name, maxHP, maxCounters, items, upgrades, strategyFunc)
 	oponent.blinkTimer = 0
 	oponent.dmgTimer = 0
 	initCreatureAnimations(oponent)
+	Combat.assimilateAttacks(oponent, attackVariation or 2, heavyAttackVariation or 2)
 
 	-- ativa os upgrades para o oponente já surgir buffado
 	for _, upgrade in pairs(oponent.inventory.upgrades) do

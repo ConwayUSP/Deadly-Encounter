@@ -4,6 +4,7 @@
 require("table")
 require("modules.engine.animation")
 require("modules.inventory")
+require("modules.combat")
 
 ----------------------------------------
 -- Entidade Player
@@ -34,6 +35,7 @@ Player.dmgTimer = 0
 Player.shakeX = 0
 Player.shakeY = 0
 initCreatureAnimations(Player)
+Combat.assimilateAttacks(Player, 1, 1)
 
 function Player:reset()
 	Player.hp = Player.maxHp
