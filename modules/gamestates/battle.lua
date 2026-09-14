@@ -401,6 +401,8 @@ end
 function CounterText:setCounter(counter)
 	self.counter = counter
 	self.scale = 1
+	self.alpha = 1
+	self.k = 0
 	self.isActive = true
 end
 
@@ -409,9 +411,11 @@ function CounterText:update(dt)
 		return
 	end
 
-	self.scale = self.scale + 2 * dt
+	self.k = self.k + dt
+	self.scale = (1 - (1 - self.k)^3) * 2
+	self.alpha = (1 - (self.k^8))
 
-	if self.scale > 2 then
+	if self.k > 1 then
 		self.isActive = false
 	end
 end
@@ -424,7 +428,7 @@ function CounterText:draw()
 	local width = self.counter:getWidth()
 	local height = self.counter:getHeight()
 
-	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.setColor(1, 1, 1, self.alpha)
 	love.graphics.draw(
 		self.counter,
 		self.pos.x - (width * self.scale) / 2,
