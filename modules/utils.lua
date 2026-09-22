@@ -14,11 +14,6 @@ function capitalize(string)
   return string:gsub("^%l", string.upper)
 end
 
--- Compare two floats with a precisio of epsilon
-function compareFloats(a, b, epsilon)
-    return math.abs(a - b) < epsilon
-end
-
 -- Chooses from a list of items using their respective weights
 function weightedChoice(items)
     local total = 0

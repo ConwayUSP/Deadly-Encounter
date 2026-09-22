@@ -25,6 +25,7 @@ function Transition.new(duration, type)
     self.isActive = false
     self.progress = 0 -- progress of the transition
     self.onComplete = nil -- function to call on completion
+    self.callbackTriggered = false
 
     return self
 end
@@ -35,6 +36,7 @@ function Transition:start(onComplete)
     self.elapsed = 0
     self.isActive = true
     self.onComplete = onComplete
+    self.callbackTriggered = false
 end
 
 
@@ -48,13 +50,17 @@ function Transition:update(dt)
 
     if self.type == Transition.FADEINOUT then
         -- load the scene at half so the fadeout effect works
-        if compareFloats(self.progress, 0.5, 0.01) then
+        if self.progress >= 0.5 and not self.callbackTriggered then
+            self.callbackTriggered = true
             if self.onComplete then self.onComplete() end
         end
     else
         -- Only loads the scene if the effect ended
-        if self.progress == 1 and self.onComplete then
-            self.onComplete()
+        if self.progress == 1 and not self.callbackTriggered then
+            self.callbackTriggered = true
+            if self.onComplete then
+				self.onComplete()
+			end
 		end
 	end
     -- if completed deactivate
