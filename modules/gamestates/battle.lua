@@ -517,8 +517,6 @@ BattleState.plusAmmoTexts = {}
 BattleState.oponentPool = generateOponentPool()
 BattleState.battleNum = 1
 BattleState.oponent = BattleState.oponentPool[BattleState.battleNum]
-BattleState.decisionTime = 5
-BattleState.timer = BattleState.decisionTime
 BattleState.turn = 1
 BattleState.hist = History.new()
 BattleState.hasEnded = false
@@ -528,6 +526,20 @@ BattleState.actionsEnabled = true
 BattleState.font = returnFont(32)
 BattleState.flashDuration = 0.25
 BattleState.flashTimer = 0
+BattleState.waitingToResetTimer = false
+
+BattleState.decisionTime = 4.8
+BattleState.musicFadeDuration = 0.8
+BattleState.musicFadeTimer = 0
+BattleState.musicVolume = 1
+
+local COUNTER_INTERVAL = 0.4
+
+local COUNTER_TIMINGS = {
+	{ number = "three", sound = "counter3", time = COUNTER_INTERVAL * 3 },
+	{ number = "two", sound = "counter2", time = COUNTER_INTERVAL * 2 },
+	{ number = "one", sound = "counter1", time = COUNTER_INTERVAL },
+}
 
 -- para caso o jogo recomece
 function BattleState:restartGame()
@@ -541,8 +553,7 @@ end
 function BattleState:reset()
 	self.texts = {}
 	self.plusAmmoTexts = {}
-	self.decisionTime = 5
-	self.timer = self.decisionTime
+	self:resetTimer()
 	self.turn = 1
 	self.hist = History.new()
 	self.hasEnded = false
@@ -550,7 +561,13 @@ function BattleState:reset()
 	self.finalResult = nil
 	self.actionsEnabled = true
 	self.flashTimer = 0
+	self.musicFadeTimer = 0
+	self.waitingToResetTimer = false
 	self:resetUI()
+end
+
+function BattleState:resetTimer()
+	self.timer = self.decisionTime + COUNTER_INTERVAL * #COUNTER_TIMINGS
 end
 
 function BattleState:resetUI()
@@ -702,6 +719,7 @@ function BattleState:simulateBattle()
 		self.finalResult = turnResult
 		self.hasEnded = true
 		self.endTimer = 2
+		self.musicFadeTimer = self.musicFadeDuration
 		if turnResult == Combat.WIN then
 			self.oponent:setAction(ACTION.DEAD)
 		else
@@ -797,6 +815,9 @@ function BattleState:load()
 	self.sounds.counterShoot = love.audio.newSource("sounds/counter_shoot.mp3", "static")
 	self.sounds.shuffle = love.audio.newSource("sounds/shuffle.mp3", "static")
 	self.sounds.shuffle:setVolume(0.5)
+	self.sounds.battleMusic = love.audio.newSource("music/battle.mp3", "stream")
+	self.sounds.battleMusic:setLooping(true)
+	Combat.playBattleSound(self.sounds.battleMusic)
 end
 
 function BattleState:resetTurn()
@@ -848,45 +869,57 @@ function BattleState:updateActionSlots()
 	self.actionSlots[getIdFromValue(ACTION.DEFENSE, ACTION_IDX)]:updateText({ current = Player.defCount, total = 2 })
 end
 
-local COUNTER_INTERVAL = 0.4
-
-local COUNTER_TIMINGS = {
-	{ number = "three", sound = "counter3", time = COUNTER_INTERVAL * 3 },
-	{ number = "two", sound = "counter2", time = COUNTER_INTERVAL * 2 },
-	{ number = "one", sound = "counter1", time = COUNTER_INTERVAL },
-}
-
 function BattleState:update(dt)
 	Player:update(dt)
 	self.oponent:update(dt)
+
+	local battleMusic = self.sounds.battleMusic
+	Combat.applyHealthMuffle(battleMusic)
+
+	if self.hasEnded and self.musicFadeTimer > 0 then
+		self.musicFadeTimer = math.max(0, self.musicFadeTimer - dt)
+		battleMusic:setVolume(self.musicVolume * (self.musicFadeTimer / self.musicFadeDuration))
+		if self.musicFadeTimer == 0 then
+			battleMusic:stop()
+		end
+	end
+
 	if not self.hasEnded then
 		local pt = self.timer
 		self.timer = pt - dt
 
-		-- count chegou a 0 -> shoot
+		-- mantém o SHOOT visível por mais um intervalo antes do próximo ciclo
 		if self.timer <= 0 then
-			self.counter:setCounter(self.sprites.shoot)
-			Combat.playBattleSound(self.sounds.counterShoot)
-			self.turn = self.turn + 1
-			self:simulateBattle()
+			if self.waitingToResetTimer then
+				self.waitingToResetTimer = false
+				self:resetTimer()
+			else
+				self.counter:setCounter(self.sprites.shoot)
+				Combat.playBattleSound(self.sounds.counterShoot)
+				self.turn = self.turn + 1
+				self:simulateBattle()
 
-			-- defibrillator effect
-			if Player.defibrilated then
-				Player.blinkTimer = Player.blinkDuration or 1.2
-			end
-			if self.oponent.defibrilated then
-				self.oponent.blinkTimer = self.oponent.blinkDuration or 1.2
-			end
+				-- defibrillator effect
+				if Player.defibrilated then
+					Player.blinkTimer = Player.blinkDuration or 1.2
+				end
+				if self.oponent.defibrilated then
+					self.oponent.blinkTimer = self.oponent.blinkDuration or 1.2
+				end
 
-			-- flashbang effect
-			local blindedAtShoot = Player.blinded or self.oponent.blinded
-			if blindedAtShoot then
-				self.flashTimer = self.flashDuration
-			end
+				-- flashbang effect
+				local blindedAtShoot = Player.blinded or self.oponent.blinded
+				if blindedAtShoot then
+					self.flashTimer = self.flashDuration
+				end
 
-			self.timer = self.decisionTime
-			self.actionsEnabled = false
-			self:resetTurn()
+				if not self.hasEnded then
+					self.timer = COUNTER_INTERVAL
+					self.waitingToResetTimer = true
+				end
+				self.actionsEnabled = false
+				self:resetTurn()
+			end
 		end
 
 		-- count chegou a 3.5 -> volta ao idle e limpa os textos
