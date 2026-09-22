@@ -60,6 +60,8 @@ function love.keypressed(key, scancode, isrepeat)
 		love.event.quit()
 	end
 
+	if MainTransition.isActive then return end
+
 	if key == "s" then
 		SetGameCtx(CTX.SHOP)
 	end
@@ -73,4 +75,12 @@ function love.mousepressed(x, y, button, istouch, presses)
     if GAMESTATE[GameCtx].mousepressed then
         GAMESTATE[GameCtx]:mousepressed(x, y, button, istouch)
     end
+end
+
+function love.touchpressed(id, x, y, dx, dy, pressure)
+	if MainTransition.isActive then return end
+
+	if GAMESTATE[GameCtx].touchpressed then
+		GAMESTATE[GameCtx]:touchpressed(id, x, y, dx, dy, pressure)
+	end
 end

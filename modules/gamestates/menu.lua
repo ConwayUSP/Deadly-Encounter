@@ -75,7 +75,8 @@ function MenuState:update(dt)
 	if self.timer > 0 then
 		self.timer = self.timer - dt
 		if self.timer <= 0 then
-			SetGameCtx(CTX.BATTLE)
+			local tutorial = GAMESTATE[CTX.TUTORIAL]
+			SetGameCtx(tutorial:hasBeenSeen() and CTX.BATTLE or CTX.TUTORIAL)
 		end
 	end
 
