@@ -651,7 +651,7 @@ function BattleState:nextBattle()
 	self.finalResult = nil
 	self.actionsEnabled = true
 	self.hist = History.new()
-	self.decisionTime = 5
+	self.decisionTime = 4.8
 
 	Player:resetForBattle()
 end
