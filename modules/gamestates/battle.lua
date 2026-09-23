@@ -809,13 +809,13 @@ function BattleState:load()
 
 	-- sounds
 	self.sounds.select = love.audio.newSource("sounds/select.wav", "static")
-	self.sounds.counter3 = love.audio.newSource("sounds/counter_3.mp3", "static")
-	self.sounds.counter2 = love.audio.newSource("sounds/counter_2.mp3", "static")
-	self.sounds.counter1 = love.audio.newSource("sounds/counter_1.mp3", "static")
-	self.sounds.counterShoot = love.audio.newSource("sounds/counter_shoot.mp3", "static")
+	self.sounds.counter3 = love.audio.newSource("sounds/counter_3.ogg", "static")
+	self.sounds.counter2 = love.audio.newSource("sounds/counter_2.ogg", "static")
+	self.sounds.counter1 = love.audio.newSource("sounds/counter_1.ogg", "static")
+	self.sounds.counterShoot = love.audio.newSource("sounds/counter_shoot.ogg", "static")
 	self.sounds.shuffle = love.audio.newSource("sounds/shuffle.mp3", "static")
 	self.sounds.shuffle:setVolume(0.5)
-	self.sounds.battleMusic = love.audio.newSource("music/battle.mp3", "stream")
+	self.sounds.battleMusic = love.audio.newSource("music/battle.ogg", "stream")
 	self.sounds.battleMusic:setLooping(true)
 	Combat.playBattleSound(self.sounds.battleMusic)
 end
