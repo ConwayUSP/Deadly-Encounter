@@ -75,8 +75,4 @@ function TutorialState:mousepressed(x, y, button, istouch)
 	end
 end
 
-function TutorialState:touchpressed(id, x, y, dx, dy, pressure)
-	self:continueToGame()
-end
-
 return TutorialState

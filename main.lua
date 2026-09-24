@@ -10,6 +10,20 @@ require("modules.oponent")
 
 Player = require("modules.player")
 
+local GAME_WIDTH, GAME_HEIGHT = 1920, 1080
+local gameCanvas
+
+-- Todo o layout continua usando a resolução original do jogo.
+love.graphics.getWidth = function() return GAME_WIDTH end
+love.graphics.getHeight = function() return GAME_HEIGHT end
+love.graphics.getDimensions = function() return GAME_WIDTH, GAME_HEIGHT end
+
+local function getViewport()
+	local screenW, screenH = love.window.getMode()
+	local scale = math.min(screenW / GAME_WIDTH, screenH / GAME_HEIGHT)
+	return scale, (screenW - GAME_WIDTH * scale) / 2, (screenH - GAME_HEIGHT * scale) / 2
+end
+
 GameCtx = CTX.MENU
 camera = Camera.new()
 
@@ -32,6 +46,9 @@ function SetGameCtx(newCtx)
 end
 
 function love.load()
+	gameCanvas = love.graphics.newCanvas(GAME_WIDTH, GAME_HEIGHT)
+	gameCanvas:setFilter("linear", "linear")
+
 	-- carrega o estado inicial manualmente para usar uma transição
 	GAMESTATE[GameCtx]:load()
 end
@@ -48,11 +65,18 @@ function love.update(dt)
 end
 
 function love.draw()
-	camera:attach()
-		GAMESTATE[GameCtx]:draw()
-	camera:detach()
+	love.graphics.setCanvas(gameCanvas)
+		love.graphics.clear(0, 0, 0)
+		camera:attach()
+			GAMESTATE[GameCtx]:draw()
+		camera:detach()
+		MainTransition:draw()
+	love.graphics.setCanvas()
 
-	MainTransition:draw()
+	local scale, x, y = getViewport()
+	love.graphics.clear(0, 0, 0)
+	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.draw(gameCanvas, x, y, 0, scale, scale)
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -71,16 +95,10 @@ end
 
 function love.mousepressed(x, y, button, istouch, presses)
     if MainTransition.isActive then return end
+	local scale, offsetX, offsetY = getViewport()
+	x, y = (x - offsetX) / scale, (y - offsetY) / scale
 
     if GAMESTATE[GameCtx].mousepressed then
         GAMESTATE[GameCtx]:mousepressed(x, y, button, istouch)
     end
-end
-
-function love.touchpressed(id, x, y, dx, dy, pressure)
-	if MainTransition.isActive then return end
-
-	if GAMESTATE[GameCtx].touchpressed then
-		GAMESTATE[GameCtx]:touchpressed(id, x, y, dx, dy, pressure)
-	end
 end
