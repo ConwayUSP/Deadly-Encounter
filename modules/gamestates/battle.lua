@@ -526,7 +526,6 @@ BattleState.actionsEnabled = true
 BattleState.font = returnFont(32)
 BattleState.flashDuration = 0.25
 BattleState.flashTimer = 0
-BattleState.waitingToResetTimer = false
 
 BattleState.decisionTime = 4.8
 BattleState.musicFadeDuration = 0.8
@@ -562,12 +561,20 @@ function BattleState:reset()
 	self.actionsEnabled = true
 	self.flashTimer = 0
 	self.musicFadeTimer = 0
-	self.waitingToResetTimer = false
 	self:resetUI()
 end
 
 function BattleState:resetTimer()
 	self.timer = self.decisionTime + COUNTER_INTERVAL * #COUNTER_TIMINGS
+end
+
+-- Mantém a fase do countdown vinculada à posição atual da música.
+function BattleState:syncTimerToMusic()
+	local musicPosition = self.sounds.battleMusic:tell("seconds")
+	local countdownDuration = COUNTER_INTERVAL * #COUNTER_TIMINGS
+	local cycleDuration = self.decisionTime + countdownDuration + COUNTER_INTERVAL
+	local phase = musicPosition % cycleDuration
+	self.timer = math.max(0, self.decisionTime + countdownDuration - phase)
 end
 
 function BattleState:resetUI()
@@ -886,44 +893,35 @@ function BattleState:update(dt)
 
 	if not self.hasEnded then
 		local pt = self.timer
-		self.timer = pt - dt
+		self:syncTimerToMusic()
 
 		-- mantém o SHOOT visível por mais um intervalo antes do próximo ciclo
-		if self.timer <= 0 then
-			if self.waitingToResetTimer then
-				self.waitingToResetTimer = false
-				self:resetTimer()
-			else
-				self.counter:setCounter(self.sprites.shoot)
-				Combat.playBattleSound(self.sounds.counterShoot)
-				self.turn = self.turn + 1
-				self:simulateBattle()
+		if pt > 0 and self.timer <= 0 then
+			self.counter:setCounter(self.sprites.shoot)
+			Combat.playBattleSound(self.sounds.counterShoot)
+			self.turn = self.turn + 1
+			self:simulateBattle()
 
-				-- defibrillator effect
-				if Player.defibrilated then
-					Player.blinkTimer = Player.blinkDuration or 1.2
-				end
-				if self.oponent.defibrilated then
-					self.oponent.blinkTimer = self.oponent.blinkDuration or 1.2
-				end
-
-				-- flashbang effect
-				local blindedAtShoot = Player.blinded or self.oponent.blinded
-				if blindedAtShoot then
-					self.flashTimer = self.flashDuration
-				end
-
-				if not self.hasEnded then
-					self.timer = COUNTER_INTERVAL
-					self.waitingToResetTimer = true
-				end
-				self.actionsEnabled = false
-				self:resetTurn()
+			-- defibrillator effect
+			if Player.defibrilated then
+				Player.blinkTimer = Player.blinkDuration or 1.2
 			end
+			if self.oponent.defibrilated then
+				self.oponent.blinkTimer = self.oponent.blinkDuration or 1.2
+			end
+
+			-- flashbang effect
+			local blindedAtShoot = Player.blinded or self.oponent.blinded
+			if blindedAtShoot then
+				self.flashTimer = self.flashDuration
+			end
+
+			self.actionsEnabled = false
+			self:resetTurn()
 		end
 
-		-- count chegou a 3.5 -> volta ao idle e limpa os textos
-		if pt > 3.5 and self.timer < 3.5 and self.turn > 1 then
+		-- volta ao idle e limpa os textos
+		if pt > self.decisionTime and self.timer < self.decisionTime and self.turn > 1 then
 			self:setAction(0)
 			self.oponent:setAction(ACTION.NONE)
 			self.actionsEnabled = true
