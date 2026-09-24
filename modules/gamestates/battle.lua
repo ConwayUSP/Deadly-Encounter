@@ -664,6 +664,15 @@ function BattleState:nextBattle()
 end
 
 -- simula um confronto entre o player e o oponente, atualizando o historico do combate
+local ACTION_FEEDBACK_FADE_DELAY = 0.5
+local ACTION_FEEDBACK_FADE_DURATION = 1.5
+local ACTION_FEEDBACK_DURATION = ACTION_FEEDBACK_FADE_DELAY + ACTION_FEEDBACK_FADE_DURATION
+
+local function updateActionFeedbackText(text, dt)
+	text.scale = text.scale and (text.scale + math.sin(dt / 10)) or 1
+	text.color[4] = math.min(1, math.max(0, text.timer / ACTION_FEEDBACK_FADE_DURATION))
+end
+
 function BattleState:simulateBattle()
 	local turnResult = simulateTurn(Player, self.oponent, self.hist)
 	self.hist:addSnapshot(Player)
@@ -676,10 +685,8 @@ function BattleState:simulateBattle()
 		{ 2.5 * width / 12 + 5, height * 0.27 + 5 },
 		0,
 		0,
-		1.5,
-		function(text, dt)
-			text.scale = text.scale and (text.scale + math.sin(dt / 10)) or 1
-		end
+		ACTION_FEEDBACK_DURATION,
+		updateActionFeedbackText
 	)
 	self.texts.playerActionShadow.isShadow = true
 	self.texts.playerAction = Text.new(
@@ -689,10 +696,8 @@ function BattleState:simulateBattle()
 		{ 2.5 * width / 12, height * 0.27 },
 		0,
 		0,
-		1.5,
-		function(text, dt)
-			text.scale = text.scale and (text.scale + math.sin(dt / 10)) or 1
-		end
+		ACTION_FEEDBACK_DURATION,
+		updateActionFeedbackText
 	)
 
 	local oponentAction = self.oponent.action
@@ -703,10 +708,8 @@ function BattleState:simulateBattle()
 		{ 9.5 * width / 12 + 5, height * 0.27 + 5 },
 		0,
 		0,
-		1.5,
-		function(text, dt)
-			text.scale = text.scale and (text.scale + math.sin(dt / 10)) or 1
-		end
+		ACTION_FEEDBACK_DURATION,
+		updateActionFeedbackText
 	)
 	self.texts.oponentActionShadow.isShadow = true
 	self.texts.oponentAction = Text.new(
@@ -716,10 +719,8 @@ function BattleState:simulateBattle()
 		{ 9.5 * width / 12, height * 0.27 },
 		0,
 		0,
-		1.5,
-		function(text, dt)
-			text.scale = text.scale and (text.scale + math.sin(dt / 10)) or 1
-		end
+		ACTION_FEEDBACK_DURATION,
+		updateActionFeedbackText
 	)
 
 	if turnResult ~= Combat.ONGOING then
