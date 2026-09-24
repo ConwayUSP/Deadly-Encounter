@@ -78,12 +78,9 @@ function initDjabo()
 		end
 
 		-- player may use heavy attack
-		-- so increase counter and try to use buff
+		-- so increase counter
 		if player.ammo >= 3 then
-				actions[1].weight = 3
-				if math.random() < 0.4 and self:hasItem(ITEM.FLASHBANG) then
-					self:useItem(ITEM.FLASHBANG)
-				end
+			actions[1].weight = 3
 		end
 
 		-- increase chance to attack if more ammo
@@ -93,8 +90,15 @@ function initDjabo()
 		end
 
 		-- prevent invalid actions
-		local choice = weightedChoice(actions)
-		return solveInvalidAction(choice, self)
+		local choice = solveInvalidAction(weightedChoice(actions), self)
+		if (choice == ACTION.ATK or choice == ACTION.HEAVY_ATK)
+			and player.ammo >= 3
+			and self:hasItem(ITEM.FLASHBANG)
+			and math.random() < 0.4 then
+			self:useItem(ITEM.FLASHBANG)
+		end
+
+		return choice
 	end
 
 	-- Has flashbangs and reverse cards and more counters
@@ -196,7 +200,7 @@ function initSebastiao()
 		end
 
 		-- prevent invalid actions
-		local choice = weightedChoice(actions)
+		local choice = solveInvalidAction(weightedChoice(actions), self)
 
 		-- uses energy drinks on heavy attacks
 		if choice == ACTION.HEAVY_ATK and self:hasItem(ITEM.ENERGY_DRINK) and math.random() < 0.7 then
@@ -208,7 +212,7 @@ function initSebastiao()
 				self:useItem(ITEM.ENERGY_DRINK)
 		end
 
-		return solveInvalidAction(choice, self)
+		return choice
 	end
 
 	-- sebastian, he can parry and drink energetic to give a boost
