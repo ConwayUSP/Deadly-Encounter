@@ -14,6 +14,11 @@ function capitalize(string)
   return string:gsub("^%l", string.upper)
 end
 
+function isMobile()
+    local os = love.system.getOS()
+    return os == "Android" or os == "iOS"
+end
+
 -- Chooses from a list of items using their respective weights
 function weightedChoice(items)
     local total = 0

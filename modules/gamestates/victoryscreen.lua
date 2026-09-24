@@ -10,7 +10,7 @@ VictoryState.screen = nil
 
 function VictoryState:load()
 	self.texts = {
-		prompt = "Press Enter or Space to Play Again"
+		prompt = isMobile() and "Tap to Play Again" or "Press Enter or Space to Play Again"
 	}
 	self.timer = 7
 	self.readyToPlay = false

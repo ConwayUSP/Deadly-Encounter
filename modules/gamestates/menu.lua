@@ -40,7 +40,7 @@ function MenuState:load()
 
 	-- texto do prompt
 	self.texts.prompt = Text.new(
-		"Press Enter or Space to Play",
+		isMobile() and "Tap to Play" or "Press Enter or Space to Play",
 		36,
 		{ 1, 1, 1, 1 },
 		{ width / 2, height * 0.9 },

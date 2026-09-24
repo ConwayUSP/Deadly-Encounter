@@ -10,7 +10,7 @@ DeathState.screen = nil
 
 function DeathState:load()
 	self.texts = {
-		prompt = "Press Enter or Space to Try Again",
+		prompt = isMobile() and "Tap to Try Again" or "Press Enter or Space to Try Again",
 	}
 	self.timer = 2
 	self.readyToPlay = false

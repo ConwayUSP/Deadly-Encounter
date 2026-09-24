@@ -27,7 +27,7 @@ function TutorialState:load()
 	self.sprites.bg = love.graphics.newImage("assets/UI/tutorial/tutorial.jpg")
 
 	self.texts.prompt = Text.new(
-		"Press any key to continue",
+		isMobile() and "Tap to Continue" or "Press any key to continue",
 		32,
 		{ 0, 0, 0, 1 },
 		{ width / 2, 80 },

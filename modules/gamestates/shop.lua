@@ -328,7 +328,7 @@ function ShopState:load()
 
 	local padding = 30
 	self.texts.warning = Text.new(
-		"Press space to buy",
+		isMobile() and "Tap an item twice to buy" or "Press space to buy",
 		48,
 		{ 1, 1, 1, 1 },
 		{ screenW - 150, screenH - padding },
