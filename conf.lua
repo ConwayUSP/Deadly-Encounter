@@ -4,7 +4,7 @@ function love.conf(t)
     t.window.height = 1080
 
     t.window.title = "Deadly Encounter"
-    t.window.icon = "assets/UI/menu/logo.png"
+    t.window.icon = "assets/icon.png"
     t.window.fullscreen = true
     t.window.fullscreentype = "desktop"
     t.window.resizable = false
