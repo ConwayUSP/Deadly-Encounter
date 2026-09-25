@@ -71,6 +71,9 @@ function love.draw()
 		camera:attach()
 			GAMESTATE[GameCtx]:draw()
 		camera:detach()
+		if GAMESTATE[GameCtx].drawUI then
+			GAMESTATE[GameCtx]:drawUI()
+		end
 		MainTransition:draw()
 	love.graphics.setCanvas()
 

@@ -10,6 +10,9 @@ function Camera.new()
   self.rotation = 0
   self.scale = 1
   self.zoomScale = 1
+  self.zoomPulseIntensity = 0
+  self.zoomPulseDuration = 0
+  self.zoomPulseTimer = 0
 
   self.shakeEnabled = true
 
@@ -23,24 +26,34 @@ function Camera.new()
   return self
 end
 
--- Sincroniza um pulso sutil de zoom com um intervalo musical.
--- Quando inativo, a câmera volta imediatamente à escala neutra.
-function Camera:syncZoomToBeat(musicPosition, interval, isActive, intensity)
-  if not isActive or not interval or interval <= 0 then
-    self.zoomScale = self.zoomScale + (1 - self.zoomScale) * 0.1 -- Suaviza a transição de volta para 1
-    return
-  end
-
-  local phase = (musicPosition % interval) / interval
-  local pulse = math.sin(math.pi * phase - math.pi / 2) ^ 8
-  self.zoomScale = 1 + (intensity or 0.02) * pulse
+-- Dispara um impacto curto de zoom que retorna suavemente à escala neutra.
+function Camera:pulseZoom(intensity, duration)
+  self.zoomPulseIntensity = intensity or 0.02
+  self.zoomPulseDuration = duration or 0.25
+  self.zoomPulseTimer = self.zoomPulseDuration
+  self.zoomScale = 1 + self.zoomPulseIntensity
 end
 
 function Camera:resetZoom()
   self.zoomScale = 1
+  self.zoomPulseIntensity = 0
+  self.zoomPulseDuration = 0
+  self.zoomPulseTimer = 0
 end
 
 function Camera:update(dt)
+  if self.zoomPulseTimer > 0 then
+    self.zoomPulseTimer = math.max(0, self.zoomPulseTimer - dt)
+
+    local remaining = self.zoomPulseTimer / self.zoomPulseDuration
+    local easedRemaining = remaining * remaining * (3 - 2 * remaining)
+    self.zoomScale = 1 + self.zoomPulseIntensity * easedRemaining
+
+    if self.zoomPulseTimer == 0 then
+      self.zoomScale = 1
+    end
+  end
+
   if self.shakeTimer > 0 then
     self.shakeTimer = self.shakeTimer - dt
 

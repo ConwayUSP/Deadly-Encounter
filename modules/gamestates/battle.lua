@@ -9,6 +9,8 @@ require("modules.combat")
 require("modules.actions")
 require("modules.fs")
 
+local BattleUI = require("modules.gamestates.battle_ui")
+
 ----------------------------------------
 -- Entidade ItemsSlot
 ----------------------------------------
@@ -550,6 +552,7 @@ BattleState.actionSlots = {}
 BattleState.counter = nil
 BattleState.itemSlots = nil
 BattleState.plusAmmoTexts = {}
+BattleState.ui = nil
 BattleState.oponentPool = generateOponentPool()
 BattleState.battleNum = 1
 BattleState.oponent = BattleState.oponentPool[BattleState.battleNum]
@@ -569,7 +572,8 @@ BattleState.musicFadeTimer = 0
 BattleState.musicVolume = 1
 
 local COUNTER_INTERVAL = 0.4
-local COUNTDOWN_ZOOM_INTENSITY = 0.01
+local SHOOT_ZOOM_INTENSITY = 0.01
+local SHOOT_ZOOM_DURATION = 0.25
 
 local COUNTER_TIMINGS = {
 	{ number = "three", sound = "counter3", time = COUNTER_INTERVAL * 3 },
@@ -681,6 +685,7 @@ function BattleState:resetUI()
 	self:updateActionSlots()
 
 	self.itemSlots.pos[1] = self.actionSlots[5]:getPosEnd() + self.itemSlots.socket:getWidth() * itemScale / 2
+	self.ui = BattleUI.new(self)
 end
 
 -- passa para o próximo oponente e reseta uns atributos
@@ -933,14 +938,12 @@ function BattleState:update(dt)
 	if not self.hasEnded then
 		local pt = self.timer
 		self:syncTimerToMusic(musicPosition)
-		local countdownDuration = COUNTER_INTERVAL * #COUNTER_TIMINGS
-		local isCountdownActive = self.timer > 0 and self.timer <= countdownDuration
-		camera:syncZoomToBeat(musicPosition, COUNTER_INTERVAL, isCountdownActive, COUNTDOWN_ZOOM_INTENSITY)
 
 		-- mantém o SHOOT visível por mais um intervalo antes do próximo ciclo
 		if pt > 0 and self.timer <= 0 then
 			self.counter:setCounter(self.sprites.shoot)
 			Combat.playBattleSound(self.sounds.counterShoot)
+			camera:pulseZoom(SHOOT_ZOOM_INTENSITY, SHOOT_ZOOM_DURATION)
 			self.turn = self.turn + 1
 			self:simulateBattle()
 
@@ -976,47 +979,12 @@ function BattleState:update(dt)
 			end
 		end
 	else
-		camera:resetZoom()
 		self.endTimer = self.endTimer - dt
 		if self.endTimer <= 0 then
 			self:endBattle()
 		end
 	end
-	self.beatIcon:update(musicPosition, not self.hasEnded and battleMusic:isPlaying())
-
-	if self.flashTimer and self.flashTimer > 0 then
-		self.flashTimer = math.max(0, self.flashTimer - dt)
-	end
-
-	self:verifyActionSlots()
-	self:updateActionSlots()
-
-	for _, slot in pairs(self.actionSlots) do
-		slot:update(dt)
-	end
-
-	self.counter:update(dt)
-
-	-- plus ammo texts
-	for i = #self.plusAmmoTexts, 1, -1 do
-		local plus = self.plusAmmoTexts[i]
-		plus:update(dt)
-		if plus.isOver then
-			table.remove(self.plusAmmoTexts, i)
-		end
-	end
-
-	for _, healthBar in pairs(self.healthBar) do
-		healthBar:update(dt)
-	end
-
-	-- texts
-	for _, text in pairs(self.texts) do
-		if text.update then
-			text:update(dt)
-		end
-	end
-	cleanUpTexts(self.texts)
+	self.ui:update(dt, musicPosition, not self.hasEnded and battleMusic:isPlaying())
 end
 
 function BattleState:draw()
@@ -1032,86 +1000,21 @@ function BattleState:draw()
 	local drawY = (screenH - bgH * scale) / 2
 	love.graphics.draw(bg, drawX, drawY, 0, scale, scale)
 
-	-- coisa
-	self.beatIcon:draw()
-
-	-- reset de cor
+	-- Combatentes são parte do mundo e recebem as transformações da câmera.
 	love.graphics.setColor(1, 1, 1, 1)
-
-	-- player
-	local width, height = love.graphics.getDimensions()
-	local playerPos = { 2.5 * width / 12, height / 2 }
+	local playerPos = { 2.5 * screenW / 12, screenH / 2 }
 	Player:draw(playerPos)
 
-	-- oponent
-	local oponentPos = { 9.5 * width / 12, height / 2 }
+	local oponentPos = { 9.5 * screenW / 12, screenH / 2 }
 	self.oponent:draw(oponentPos)
-
-	-- upgrades
-	self.upgradesOwned.player:draw()
-	self.upgradesOwned.oponent:draw()
-
-	-- health bars
-	self.healthBar.player:draw()
-	self.healthBar.oponent:draw()
-
-	-- action slots
-	for _, slot in pairs(self.actionSlots) do
-		slot:draw()
-	end
-
-	-- ammo amount
-	local startX = self.actionSlots[1].startX
-		- self.actionSlots[1].socket:getWidth() * self.actionSlots[1].scale / 2
-		- self.sprites.amount:getWidth()
-		- 20
-	local amountX = startX
-	local amountY = screenH - self.sprites.amount:getHeight() - 60
-	love.graphics.draw(self.sprites.amount, amountX, amountY, 0, 1, 1)
-
-	local prevFont = love.graphics.getFont()
-	love.graphics.setFont(self.font)
-	love.graphics.print(
-		tostring(Player.ammo) .. "x",
-		amountX + self.sprites.amount:getWidth() + 5,
-		amountY + self.sprites.amount:getHeight() / 2 - self.font:getHeight() / 2
-	)
-	love.graphics.setFont(prevFont)
-
-	-- item slots
-	self.itemSlots:draw()
-
-	-- texts
-	for _, text in pairs(self.texts) do
-		if text.isShadow then
-			text:draw()
-		end
-	end
-
-	-- plus ammo texts
-	for _, plus in ipairs(self.plusAmmoTexts) do
-		plus:draw()
-	end
-
-	for _, text in pairs(self.texts) do
-		if not text.isShadow then
-			text:draw()
-		end
-	end
-
-	-- counter
-	self.counter:draw()
-
-	-- clarão (flashbang)
-	if self.flashTimer and self.flashTimer > 0 then
-		local t = self.flashTimer / self.flashDuration
-		local alpha = math.max(0, math.min(1, t))
-		love.graphics.setColor(1, 1, 1, alpha)
-		love.graphics.rectangle("fill", 0, 0, screenW, screenH)
-	end
 
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.setShader()
+end
+
+-- Desenhada pelo loop principal depois que a câmera é desacoplada.
+function BattleState:drawUI()
+	self.ui:draw()
 end
 
 -- Detecta o input do usuário
