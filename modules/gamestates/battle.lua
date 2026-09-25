@@ -441,6 +441,42 @@ function CounterText:draw()
 end
 
 ----------------------------------------
+-- Entidade BeatIcon
+----------------------------------------
+
+BeatIcon = {}
+BeatIcon.__index = BeatIcon
+
+-- Cria o ícone que pulsa no ritmo da música.
+function BeatIcon.new(sprite, pos, interval, baseScale)
+	local beat = setmetatable({}, BeatIcon)
+	beat.sprite = sprite
+	beat.pos = pos
+	beat.interval = interval
+	beat.baseScale = baseScale
+	beat.scale = baseScale
+	return beat
+end
+
+-- Atualiza o pulso conforme a posição da música e para quando a batalha termina.
+function BeatIcon:update(musicPosition, isBattleActive)
+	if not isBattleActive then
+		self.scale = self.baseScale
+		return
+	end
+
+	local phase = (musicPosition % self.interval) / self.interval
+	local pulse = math.sin(math.pi * phase - math.pi/2) ^ 8
+	self.scale = self.baseScale * (1 + 0.16 * pulse)
+end
+
+-- Desenha o ícone ancorado pelo centro para o pulso não deslocá-lo.
+function BeatIcon:draw()
+	local width, height = self.sprite:getDimensions()
+	love.graphics.draw(self.sprite, self.pos.x, self.pos.y, 0, self.scale, self.scale, width / 2, height / 2)
+end
+
+----------------------------------------
 -- Entidade PlusAmmoText
 ----------------------------------------
 
@@ -569,8 +605,7 @@ function BattleState:resetTimer()
 end
 
 -- Mantém a fase do countdown vinculada à posição atual da música.
-function BattleState:syncTimerToMusic()
-	local musicPosition = self.sounds.battleMusic:tell("seconds")
+function BattleState:syncTimerToMusic(musicPosition)
 	local countdownDuration = COUNTER_INTERVAL * #COUNTER_TIMINGS
 	local cycleDuration = self.decisionTime + countdownDuration + COUNTER_INTERVAL
 	local phase = musicPosition % cycleDuration
@@ -591,6 +626,7 @@ function BattleState:resetUI()
 	self.sprites.coisa = love.graphics.newImage("assets/UI/combat/coisa.png")
 	local coisaW = self.sprites.coisa:getWidth()
 	local coisaScale = 0.65
+	self.beatIcon = BeatIcon.new(self.sprites.coisa, { x = screenW / 2, y = 105 }, COUNTER_INTERVAL, coisaScale)
 
 	-- health bars
 	xOffset = 40
@@ -882,6 +918,7 @@ function BattleState:update(dt)
 	self.oponent:update(dt)
 
 	local battleMusic = self.sounds.battleMusic
+	local musicPosition = battleMusic:tell("seconds")
 	Combat.applyHealthMuffle(battleMusic)
 
 	if self.hasEnded and self.musicFadeTimer > 0 then
@@ -894,7 +931,7 @@ function BattleState:update(dt)
 
 	if not self.hasEnded then
 		local pt = self.timer
-		self:syncTimerToMusic()
+		self:syncTimerToMusic(musicPosition)
 
 		-- mantém o SHOOT visível por mais um intervalo antes do próximo ciclo
 		if pt > 0 and self.timer <= 0 then
@@ -940,6 +977,7 @@ function BattleState:update(dt)
 			self:endBattle()
 		end
 	end
+	self.beatIcon:update(musicPosition, not self.hasEnded and battleMusic:isPlaying())
 
 	if self.flashTimer and self.flashTimer > 0 then
 		self.flashTimer = math.max(0, self.flashTimer - dt)
@@ -990,12 +1028,7 @@ function BattleState:draw()
 	love.graphics.draw(bg, drawX, drawY, 0, scale, scale)
 
 	-- coisa
-	local coisa = self.sprites.coisa
-	local coisaW = coisa:getWidth()
-	local coisaScale = 0.65
-	local coisaX = screenW / 2 - (coisaW * coisaScale) / 2
-	local coisaY = 55
-	love.graphics.draw(coisa, coisaX, coisaY, 0, coisaScale, coisaScale)
+	self.beatIcon:draw()
 
 	-- reset de cor
 	love.graphics.setColor(1, 1, 1, 1)
