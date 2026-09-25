@@ -38,6 +38,7 @@ function SetGameCtx(newCtx)
 			sound:stop()
 		end
 	end
+	camera:resetZoom()
 
 	MainTransition:start(function()
 		GameCtx = newCtx

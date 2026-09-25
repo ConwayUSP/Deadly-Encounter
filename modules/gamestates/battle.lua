@@ -569,6 +569,7 @@ BattleState.musicFadeTimer = 0
 BattleState.musicVolume = 1
 
 local COUNTER_INTERVAL = 0.4
+local COUNTDOWN_ZOOM_INTENSITY = 0.01
 
 local COUNTER_TIMINGS = {
 	{ number = "three", sound = "counter3", time = COUNTER_INTERVAL * 3 },
@@ -932,6 +933,9 @@ function BattleState:update(dt)
 	if not self.hasEnded then
 		local pt = self.timer
 		self:syncTimerToMusic(musicPosition)
+		local countdownDuration = COUNTER_INTERVAL * #COUNTER_TIMINGS
+		local isCountdownActive = self.timer > 0 and self.timer <= countdownDuration
+		camera:syncZoomToBeat(musicPosition, COUNTER_INTERVAL, isCountdownActive, COUNTDOWN_ZOOM_INTENSITY)
 
 		-- mantém o SHOOT visível por mais um intervalo antes do próximo ciclo
 		if pt > 0 and self.timer <= 0 then
@@ -972,6 +976,7 @@ function BattleState:update(dt)
 			end
 		end
 	else
+		camera:resetZoom()
 		self.endTimer = self.endTimer - dt
 		if self.endTimer <= 0 then
 			self:endBattle()

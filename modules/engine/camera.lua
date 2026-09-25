@@ -9,6 +9,7 @@ function Camera.new()
 
   self.rotation = 0
   self.scale = 1
+  self.zoomScale = 1
 
   self.shakeEnabled = true
 
@@ -20,6 +21,23 @@ function Camera.new()
   self.shakeY = 0
 
   return self
+end
+
+-- Sincroniza um pulso sutil de zoom com um intervalo musical.
+-- Quando inativo, a câmera volta imediatamente à escala neutra.
+function Camera:syncZoomToBeat(musicPosition, interval, isActive, intensity)
+  if not isActive or not interval or interval <= 0 then
+    self.zoomScale = self.zoomScale + (1 - self.zoomScale) * 0.1 -- Suaviza a transição de volta para 1
+    return
+  end
+
+  local phase = (musicPosition % interval) / interval
+  local pulse = math.sin(math.pi * phase - math.pi / 2) ^ 8
+  self.zoomScale = 1 + (intensity or 0.02) * pulse
+end
+
+function Camera:resetZoom()
+  self.zoomScale = 1
 end
 
 function Camera:update(dt)
@@ -58,10 +76,16 @@ end
 function Camera:attach()
   love.graphics.push()
 
+  local width, height = love.graphics.getDimensions()
+
+  -- Aplica apenas o pulso no centro da tela e preserva as transformações
+  -- já existentes da câmera.
+  love.graphics.translate(width / 2, height / 2)
+  love.graphics.scale(self.zoomScale, self.zoomScale)
+  love.graphics.translate(-width / 2, -height / 2)
+
   love.graphics.translate( -self.x + self.shakeX, -self.y + self.shakeY )
-
   love.graphics.rotate(self.rotation)
-
   love.graphics.scale(self.scale, self.scale)
 end
 
