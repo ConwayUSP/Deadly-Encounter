@@ -1,4 +1,6 @@
 function love.conf(t)
+    t.version = "11.5"
+    
     -- No mobile, largura maior que altura fixa a orientação em landscape.
     t.window.width = 1920
     t.window.height = 1080

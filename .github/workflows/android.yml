@@ -1,0 +1,45 @@
+name: Gerar APK Android
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Compilar APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o projeto
+        uses: actions/checkout@v4
+
+      - name: Criar o pacote game.love
+        uses: love-actions/love-actions-core@v1
+        with:
+          build-list: ./assets ./modules ./music ./sounds ./conf.lua ./main.lua
+          package-path: ./game.love
+
+      - name: Compilar o APK
+        id: android-build
+        uses: love-actions/love-actions-android@v2
+        with:
+          app-name: "Deadly Encounter"
+          bundle-id: "br.usp.conway.deadlyencounter"
+          love-ref: "11.5a"
+          love-package: "./game.love"
+          resource-path: "./android/res"
+          icon-specifier: "@drawable/app_icon"
+          product-name: "deadly-encounter"
+          version-string: "1.0.0"
+          version-code: "1"
+          output-folder: "./dist"
+
+      - name: Disponibilizar o APK para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: deadly-encounter-android
+          path: ./dist/*.apk
+          if-no-files-found: error
+          retention-days: 30
