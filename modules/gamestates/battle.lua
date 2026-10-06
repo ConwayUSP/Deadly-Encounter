@@ -182,6 +182,7 @@ end
 
 function ActionSlot:draw()
 	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.setShader()
 
 	if self.disabled then
 		love.graphics.setShader(darknessShader)
@@ -212,11 +213,8 @@ function ActionSlot:draw()
 		love.graphics.print(text, self.pos[1] - socketW / 2 + padding, self.pos[2] - socketH / 2 + padding)
 	end
 
-	if self.disabled or self.active then
-		love.graphics.setShader()
-	end
-
 	-- reset
+	love.graphics.setShader()
 	love.graphics.setColor(1, 1, 1, 1)
 end
 

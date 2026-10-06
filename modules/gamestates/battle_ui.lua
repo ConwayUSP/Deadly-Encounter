@@ -85,6 +85,9 @@ function BattleUI:draw()
 
 	battle.itemSlots:draw()
 
+	-- Textos usam suas próprias cores; nenhum shader da UI deve ser herdado aqui.
+	love.graphics.setShader()
+
 	-- Nomes, ações e feedbacks flutuantes.
 	for _, text in pairs(battle.texts) do
 		if text.isShadow then
