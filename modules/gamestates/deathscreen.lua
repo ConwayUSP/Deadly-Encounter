@@ -1,4 +1,5 @@
 local FinalScreen = require("modules.gamestates.finalscreen")
+local Resolution = require("modules.resolution")
 
 local DeathState = {}
 DeathState.__index = DeathState
@@ -42,7 +43,7 @@ function DeathState:update(dt)
 end
 
 function DeathState:draw()
-	local screenW, screenH = love.graphics.getWidth(), love.graphics.getHeight()
+	local screenW, screenH = Resolution.getGameDimensions()
 
 	-- background
 	local bg = self.sprites.bg

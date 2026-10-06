@@ -4,6 +4,7 @@ require("table")
 require("modules.engine.text")
 require("modules.utils")
 require("modules.fs")
+local Resolution = require("modules.resolution")
 
 ----------------------------------------
 -- Entidade Final Screen (representa Victory Screen e Death Screen)
@@ -14,7 +15,7 @@ FinalScreen.__index = FinalScreen
 
 function FinalScreen:new(prompt, timer)
 	local screen = setmetatable({}, FinalScreen)
-	local width, height = love.graphics.getDimensions()
+	local width, height = Resolution.getGameDimensions()
 
 	screen.timer = timer or 2.5
 	screen.texts = {}

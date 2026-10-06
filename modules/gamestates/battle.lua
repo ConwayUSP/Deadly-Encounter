@@ -10,6 +10,7 @@ require("modules.actions")
 require("modules.fs")
 
 local BattleUI = require("modules.gamestates.battle_ui")
+local Resolution = require("modules.resolution")
 
 ----------------------------------------
 -- Entidade ItemsSlot
@@ -114,7 +115,7 @@ function ActionSlot.new(action, index, scale, screenW, text)
 	slot.actionSprite = love.graphics.newImage("assets/UI/combat/" .. action .. ".png")
 
 	-- position
-	local y = love.graphics.getHeight() - 100
+	local y = Resolution.getGameHeight() - 100
 	local slotWidth = slot.socket:getWidth() * scale
 	local totalWidth = 5 * slotWidth + 4 * slot.gap
 	local startX = (screenW - totalWidth) / 2
@@ -623,9 +624,8 @@ function BattleState:resetUI()
 	self.actionSlots = {}
 	self.itemSlots = nil
 	self.plusAmmoTexts = {}
-	self.counter = CounterText.new({ x = love.graphics.getWidth() / 2, y = love.graphics.getHeight() * 2 / 5 })
-
-	local screenW, screenH = love.graphics.getWidth(), love.graphics.getHeight()
+	local screenW, screenH = Resolution.getGameDimensions()
+	self.counter = CounterText.new({ x = screenW / 2, y = screenH * 2 / 5 })
 
 	-- coisa
 	self.sprites.coisa = love.graphics.newImage("assets/UI/combat/coisa.png")
@@ -719,7 +719,7 @@ function BattleState:simulateBattle()
 	local turnResult = simulateTurn(Player, self.oponent, self.hist)
 	self.hist:addSnapshot(Player)
 
-	local width, height = love.graphics.getDimensions()
+	local width, height = Resolution.getGameDimensions()
 	self.texts.playerActionShadow = Text.new(
 		toPrettyActionName(Player.action),
 		64,
@@ -783,7 +783,7 @@ function BattleState:addPlusAmmoText(criatura, amount)
 		return
 	end
 
-	local width, height = love.graphics.getDimensions()
+	local width, height = Resolution.getGameDimensions()
 	local xOffset = 150
 	local yOffset = math.random(-50, 50)
 	local pos = criatura.name == Player.name and { 2.5 * width / 12 + xOffset, height / 2 + yOffset }
@@ -800,7 +800,7 @@ function BattleState:addDamageOrHealingText(criatura, amount)
 		return
 	end
 
-	local width, height = love.graphics.getDimensions()
+	local width, height = Resolution.getGameDimensions()
 	local xOffset = 150
 	local yOffset = math.random(-50, 50)
 	local pos = criatura.name == Player.name and { 2.5 * width / 12 + xOffset, height / 2.5 + yOffset }
@@ -990,7 +990,7 @@ end
 function BattleState:draw()
 	redBordersShader:send("playerHP", Player.hp)
 	love.graphics.setShader(redBordersShader)
-	local screenW, screenH = love.graphics.getWidth(), love.graphics.getHeight()
+	local screenW, screenH = Resolution.getGameDimensions()
 
 	-- background
 	local bg = self.sprites.bg

@@ -3,6 +3,7 @@
 ----------------------------------------
 
 require("modules.utils")
+local Resolution = require("modules.resolution")
 
 ----------------------------------------
 -- Classe Transition
@@ -81,22 +82,21 @@ end
 
 -- Slide a Rectangle from right to left
 function Transition:drawSlideLeft()
-    local width = love.graphics.getWidth()
+    local width = Resolution.getGameWidth()
     local offset = width * self.progress
 
     love.graphics.setColor(0, 0, 0, 1)
-    love.graphics.rectangle("fill", width - offset, 0, offset, love.graphics.getHeight())
+    love.graphics.rectangle("fill", width - offset, 0, offset, Resolution.getGameHeight())
     love.graphics.setColor(1, 1, 1, 1)
 end
 
 function Transition:drawFadeInOut()
-    local width = love.graphics.getWidth()
-    local height = love.graphics.getHeight()
+    local width, height = Resolution.getGameDimensions()
     local alpha = -4 * self.progress ^ 2 + 4 * self.progress
     -- local alpha = self.progress
 
     love.graphics.setColor(0, 0, 0, alpha) -- increase transparency
-    love.graphics.rectangle("fill", 0, 0, width, love.graphics.getHeight())
+    love.graphics.rectangle("fill", 0, 0, width, height)
     love.graphics.setColor(1, 1, 1, 1)
 
 end

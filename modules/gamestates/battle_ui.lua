@@ -1,3 +1,5 @@
+local Resolution = require("modules.resolution")
+
 local BattleUI = {}
 BattleUI.__index = BattleUI
 
@@ -47,7 +49,7 @@ end
 
 function BattleUI:draw()
 	local battle = self.battle
-	local screenH = love.graphics.getHeight()
+	local screenW, screenH = Resolution.getGameDimensions()
 
 	redBordersShader:send("playerHP", Player.hp)
 	love.graphics.setShader(redBordersShader)
@@ -106,7 +108,7 @@ function BattleUI:draw()
 	if battle.flashTimer and battle.flashTimer > 0 then
 		local alpha = math.max(0, math.min(1, battle.flashTimer / battle.flashDuration))
 		love.graphics.setColor(1, 1, 1, alpha)
-		love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), screenH)
+		love.graphics.rectangle("fill", 0, 0, screenW, screenH)
 	end
 
 	love.graphics.setColor(1, 1, 1, 1)

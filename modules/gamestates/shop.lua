@@ -6,6 +6,7 @@ require("modules.constructors.buffs")
 require("modules.utils")
 require("modules.fs")
 require("modules.shaders")
+local Resolution = require("modules.resolution")
 
 ----------------------------------------
 -- Constantes
@@ -284,7 +285,7 @@ function ShopState:setPurchasedSlots(items)
 	local rectSize = PURCHASED_SLOT_SIZE
 	local gap = 10
 	local totalWidth = rectSize * count + gap * (count - 1)
-	local screenW, screenH = love.graphics.getWidth(), love.graphics.getHeight()
+	local screenW, screenH = Resolution.getGameDimensions()
 	local startX = (screenW - totalWidth) / 2 + rectSize / 2
 	local y = screenH - 80
 
@@ -297,7 +298,7 @@ function ShopState:setPurchasedSlots(items)
 end
 
 function ShopState:load()
-	local screenW, screenH = love.graphics.getWidth(), love.graphics.getHeight()
+	local screenW, screenH = Resolution.getGameDimensions()
 	self.sprites.bg = love.graphics.newImage("assets/UI/shop/shop_bg.png")
 	self.sprites.sign = love.graphics.newImage("assets/UI/shop/plate.png")
 	self.sprites.bag = love.graphics.newImage("assets/UI/shop/bag.png")
@@ -502,7 +503,7 @@ function ShopState:draw()
 	-- fundo em tom bege suave
 	love.graphics.clear(0.95, 0.90, 0.80)
 
-	local screenW, screenH = love.graphics.getWidth(), love.graphics.getHeight()
+	local screenW, screenH = Resolution.getGameDimensions()
 
 	-- background
 	local bg = self.sprites.bg
@@ -516,7 +517,7 @@ function ShopState:draw()
 	local bag = self.sprites.bag
 	local bagScale = 0.7
 	local bagW = bag:getWidth() * bagScale
-	local screenHeight = love.graphics.getHeight()
+	local screenHeight = Resolution.getGameHeight()
 	local bagY = screenHeight - bag:getHeight() * bagScale - 30
 	love.graphics.draw(bag, (screenW - bagW) / 2, bagY, 0, bagScale, bagScale)
 

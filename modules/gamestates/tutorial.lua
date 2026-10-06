@@ -3,6 +3,7 @@
 ----------------------------------------
 require("modules.engine.text")
 require("modules.utils")
+local Resolution = require("modules.resolution")
 
 ----------------------------------------
 -- Estado do Tutorial
@@ -21,7 +22,7 @@ function TutorialState:hasBeenSeen()
 end
 
 function TutorialState:load()
-	local width, height = love.graphics.getDimensions()
+	local width, height = Resolution.getGameDimensions()
 
 	self.isLeaving = false
 	self.sprites.bg = love.graphics.newImage("assets/UI/tutorial/tutorial.jpg")
@@ -48,7 +49,7 @@ function TutorialState:update(dt)
 end
 
 function TutorialState:draw()
-	local screenW, screenH = love.graphics.getDimensions()
+	local screenW, screenH = Resolution.getGameDimensions()
 	local bg = self.sprites.bg
 
 	love.graphics.setColor(1, 1, 1, 1)

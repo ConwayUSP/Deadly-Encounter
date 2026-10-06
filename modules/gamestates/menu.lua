@@ -4,6 +4,7 @@
 require("modules.engine.text")
 require("modules.fs")
 require("modules.utils")
+local Resolution = require("modules.resolution")
 
 ----------------------------------------
 -- Estado do Menu
@@ -24,7 +25,7 @@ MenuState.musicTimer = 2.5
 MenuState.isFirstRender = true
 
 function MenuState:load()
-	local width, height = love.graphics.getDimensions()
+	local width, height = Resolution.getGameDimensions()
 	
 	for _, gameState in pairs(GAMESTATE) do
 		if gameState.restartGame then
@@ -105,7 +106,7 @@ function MenuState:update(dt)
 end
 
 function MenuState:draw()
-	local screenW, screenH = love.graphics.getWidth(), love.graphics.getHeight()
+	local screenW, screenH = Resolution.getGameDimensions()
 
 		-- background
 	local bg = self.sprites.bg

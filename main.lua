@@ -10,19 +10,9 @@ require("modules.oponent")
 
 Player = require("modules.player")
 
-local GAME_WIDTH, GAME_HEIGHT = 1920, 1080
+local Resolution = require("modules.resolution")
+local GAME_WIDTH, GAME_HEIGHT = Resolution.getGameDimensions()
 local gameCanvas
-
--- Todo o layout continua usando a resolução original do jogo.
-love.graphics.getWidth = function() return GAME_WIDTH end
-love.graphics.getHeight = function() return GAME_HEIGHT end
-love.graphics.getDimensions = function() return GAME_WIDTH, GAME_HEIGHT end
-
-local function getViewport()
-	local screenW, screenH = love.window.getMode()
-	local scale = math.min(screenW / GAME_WIDTH, screenH / GAME_HEIGHT)
-	return scale, (screenW - GAME_WIDTH * scale) / 2, (screenH - GAME_HEIGHT * scale) / 2
-end
 
 GameCtx = CTX.MENU
 camera = Camera.new()
@@ -77,8 +67,8 @@ function love.draw()
 		MainTransition:draw()
 	love.graphics.setCanvas()
 
-	local scale, x, y = getViewport()
-	love.graphics.clear(0, 0, 0)
+	local scale, x, y = Resolution.getViewport()
+	love.graphics.clear(0, 0, 0, 1)
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.draw(gameCanvas, x, y, 0, scale, scale)
 end
@@ -99,10 +89,10 @@ end
 
 function love.mousepressed(x, y, button, istouch, presses)
     if MainTransition.isActive then return end
-	local scale, offsetX, offsetY = getViewport()
-	x, y = (x - offsetX) / scale, (y - offsetY) / scale
+	local gameX, gameY = Resolution.toGameCoordinates(x, y)
+	if not gameX then return end
 
     if GAMESTATE[GameCtx].mousepressed then
-        GAMESTATE[GameCtx]:mousepressed(x, y, button, istouch)
+        GAMESTATE[GameCtx]:mousepressed(gameX, gameY, button, istouch)
     end
 end

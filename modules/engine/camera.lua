@@ -1,3 +1,5 @@
+local Resolution = require("modules.resolution")
+
 Camera = {}
 Camera.__index = Camera
 
@@ -89,7 +91,7 @@ end
 function Camera:attach()
   love.graphics.push()
 
-  local width, height = love.graphics.getDimensions()
+  local width, height = Resolution.getGameDimensions()
 
   -- Aplica apenas o pulso no centro da tela e preserva as transformações
   -- já existentes da câmera.

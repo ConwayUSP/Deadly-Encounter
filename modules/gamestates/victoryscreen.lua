@@ -1,4 +1,5 @@
 local FinalScreen = require("modules.gamestates.finalscreen")
+local Resolution = require("modules.resolution")
 
 local VictoryState = {}
 VictoryState.__index = VictoryState
@@ -42,7 +43,7 @@ function VictoryState:update(dt)
 end
 
 function VictoryState:draw()
-	local screenW, screenH = love.graphics.getWidth(), love.graphics.getHeight()
+	local screenW, screenH = Resolution.getGameDimensions()
 
 	-- background
 	local bg = self.sprites.bg
