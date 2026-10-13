@@ -16,6 +16,10 @@ function Resolution.getGameDimensions()
 	return GAME_WIDTH, GAME_HEIGHT
 end
 
+function Resolution.getGameAspectRatio()
+	return GAME_WIDTH / GAME_HEIGHT
+end
+
 function Resolution.getScreenDimensions()
 	return love.graphics.getDimensions()
 end

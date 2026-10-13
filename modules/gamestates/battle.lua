@@ -986,8 +986,6 @@ function BattleState:update(dt)
 end
 
 function BattleState:draw()
-	redBordersShader:send("playerHP", Player.hp)
-	love.graphics.setShader(redBordersShader)
 	local screenW, screenH = Resolution.getGameDimensions()
 
 	-- background
@@ -1007,12 +1005,18 @@ function BattleState:draw()
 	self.oponent:draw(oponentPos)
 
 	love.graphics.setColor(1, 1, 1, 1)
-	love.graphics.setShader()
 end
 
 -- Desenhada pelo loop principal depois que a câmera é desacoplada.
 function BattleState:drawUI()
 	self.ui:draw()
+end
+
+function BattleState:getPostProcessShader()
+	local healthRatio = math.max(0, math.min(1, Player.hp / Player.maxHp))
+	redBordersShader:send("healthRatio", healthRatio)
+	redBordersShader:send("aspectRatio", Resolution.getGameAspectRatio())
+	return redBordersShader
 end
 
 -- Detecta o input do usuário

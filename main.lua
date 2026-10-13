@@ -37,7 +37,7 @@ function SetGameCtx(newCtx)
 end
 
 function love.load()
-	gameCanvas = love.graphics.newCanvas(GAME_WIDTH, GAME_HEIGHT)
+	gameCanvas = love.graphics.newCanvas(GAME_WIDTH, GAME_HEIGHT, { dpiscale = 1 })
 	gameCanvas:setFilter("linear", "linear")
 
 	-- carrega o estado inicial manualmente para usar uma transição
@@ -56,21 +56,26 @@ function love.update(dt)
 end
 
 function love.draw()
+	local gameState = GAMESTATE[GameCtx]
+
 	love.graphics.setCanvas(gameCanvas)
 		love.graphics.clear(0, 0, 0)
 		camera:attach()
-			GAMESTATE[GameCtx]:draw()
+			gameState:draw()
 		camera:detach()
-		if GAMESTATE[GameCtx].drawUI then
-			GAMESTATE[GameCtx]:drawUI()
+		if gameState.drawUI then
+			gameState:drawUI()
 		end
 		MainTransition:draw()
 	love.graphics.setCanvas()
 
 	local scale, x, y = Resolution.getViewport()
+	local postProcessShader = gameState.getPostProcessShader and gameState:getPostProcessShader() or nil
 	love.graphics.clear(0, 0, 0, 1)
 	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.setShader(postProcessShader)
 	love.graphics.draw(gameCanvas, x, y, 0, scale, scale)
+	love.graphics.setShader()
 end
 
 function love.keypressed(key, scancode, isrepeat)

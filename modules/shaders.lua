@@ -1,40 +1,41 @@
 brightnessShader = love.graphics.newShader([[
 	vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
 	{
-			vec4 texcolor = Texel(texture, texture_coords);
-			return texcolor + vec4(0.2, 0.2, 0.2, 0.0);
+			vec4 texcolor = Texel(texture, texture_coords) * color;
+			texcolor.rgb = min(texcolor.rgb + vec3(0.2), vec3(1.0));
+			return texcolor;
 	}
 ]])
 
 darknessShader = love.graphics.newShader([[
 	vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
 	{
-		vec4 texcolor = Texel(texture, texture_coords);
-		return texcolor - vec4(0.1, 0.3, 0.3, 0.0);
+		vec4 texcolor = Texel(texture, texture_coords) * color;
+		texcolor.rgb = max(texcolor.rgb - vec3(0.1, 0.3, 0.3), vec3(0.0));
+		return texcolor;
 	}
 ]])
 
 redBordersShader = love.graphics.newShader([[
-	uniform float playerHP;
+	uniform float healthRatio;
+	uniform float aspectRatio;
+
 	vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
 	{
-		float playerHPNormal = playerHP / 200.0;
-		float centerDist = sqrt(pow(screen_coords.x - 960.0, 2.0) + pow(screen_coords.y - 580.0, 2.0));
-		float redness = centerDist - 800.0;
-		redness = redness / 300.0;
-		redness = pow(redness, 2.0);
-		redness = redness - playerHPNormal;
-		if(redness < 0.0) {
-			redness = 0.0;
-		}
-		
-		vec4 texcolor = Texel(texture, texture_coords);
+		const float centerY = 580.0 / 1080.0;
+		const float innerRadius = 800.0 / 1080.0;
+		const float fadeWidth = 300.0 / 1080.0;
 
-		if(centerDist < 800.0) {
-			return texcolor;
-		} else {
-			return texcolor - vec4(redness / 3.0, redness, redness, 0.0);
-		}
+		vec2 distanceFromCenter = texture_coords - vec2(0.5, centerY);
+		distanceFromCenter.x *= aspectRatio;
+
+		float centerDistance = length(distanceFromCenter);
+		float edge = max((centerDistance - innerRadius) / fadeWidth, 0.0);
+		float redness = max(edge * edge - clamp(healthRatio, 0.0, 1.0), 0.0);
+		vec4 texcolor = Texel(texture, texture_coords) * color;
+		texcolor.rgb = max(texcolor.rgb - vec3(redness / 3.0, redness, redness), vec3(0.0));
+
+		return texcolor;
 	}
 ]])
 

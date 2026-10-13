@@ -51,9 +51,6 @@ function BattleUI:draw()
 	local battle = self.battle
 	local screenW, screenH = Resolution.getGameDimensions()
 
-	redBordersShader:send("playerHP", Player.hp)
-	love.graphics.setShader(redBordersShader)
-
 	-- Ícone central e informações dos combatentes.
 	battle.beatIcon:draw()
 	battle.upgradesOwned.player:draw()
