@@ -30,7 +30,7 @@ DescriptionCard.__index = DescriptionCard
 
 function DescriptionCard.new(item, pos)
 	local card = setmetatable({}, DescriptionCard)
-	local x, y = pos.x, pos.y - 30
+	local x, y = pos.x, pos.y - 40 * Resolution.getUIScale()^3
 
 	local function updateFunc(text, _, descCard)
 		local color = text.color or { 0, 0, 0, 1 }
@@ -41,17 +41,7 @@ function DescriptionCard.new(item, pos)
 	card.item = item
 	card.type = item.type
 	card.title = Text.new(capitalize(item.id), 24, { 1, 1, 1, 1 }, { x, y }, nil, false, math.huge, updateFunc)
-	card.description = Text.new(
-		item.description,
-		16,
-		{ 1, 1, 1, 1 },
-		{ x, y + 30 },
-		nil,
-		false,
-		math.huge,
-		updateFunc,
-		DESCRIPTION_WIDTH
-	)
+	card.description = Text.new(item.description, 16, { 1, 1, 1, 1 }, { x, y + 30 }, nil, false, math.huge, updateFunc, DESCRIPTION_WIDTH)
 
 	card.scale = 0.55
 	card.bg = love.graphics.newImage("assets/UI/shop/description_" .. item.type .. ".png")
@@ -299,6 +289,7 @@ end
 
 function ShopState:load()
 	local screenW, screenH = Resolution.getGameDimensions()
+	local uiW, uiH = Resolution.getUIDimensions()
 	self.sprites.bg = love.graphics.newImage("assets/UI/shop/shop_bg.png")
 	self.sprites.sign = love.graphics.newImage("assets/UI/shop/plate.png")
 	self.sprites.bag = love.graphics.newImage("assets/UI/shop/bag.png")
@@ -328,19 +319,10 @@ function ShopState:load()
 	end
 
 	local padding = 30
-	self.texts.warning = Text.new(
-		isMobile() and "Tap an item twice to buy" or "Press space to buy",
-		48,
-		{ 1, 1, 1, 1 },
-		{ screenW - 150, screenH - padding },
-		nil,
-		true,
-		math.huge,
-		blinkUpdate
-	)
+	self.texts.warning = Text.new(isMobile() and "Tap an item twice to buy" or "Press space to buy", 48, { 1, 1, 1, 1 }, { uiW - 150, uiH - padding }, nil, true, math.huge, blinkUpdate)
 	local textWidth, textHeight = self.texts.warning:getDimensions()
-	self.texts.warning.pos[1] = screenW - textWidth/2 - padding
-	self.texts.warning.pos[2] = screenH - padding - textHeight/2
+	self.texts.warning.pos[1] = uiW - textWidth / 2 - padding
+	self.texts.warning.pos[2] = uiH - padding - textHeight / 2
 
 	DESCRIPTIONS_TOTAL_WIDTH = DESCRIPTION_WIDTH * ITEMS_FOR_SALE + DESCRIPTION_GAP * (ITEMS_FOR_SALE - 1)
 	DESCRIPTION_START_X = (screenW - DESCRIPTIONS_TOTAL_WIDTH) / 2
@@ -376,6 +358,7 @@ function ShopState:randomizeItems()
 	local pickedIndexes = {}
 	local pickedCount = 0
 	local maxForSale = math.min(ITEMS_FOR_SALE, #self.allItems)
+	local descriptionStartX = (Resolution.getUIWidth() - DESCRIPTIONS_TOTAL_WIDTH) / 2
 	while pickedCount < maxForSale do
 		local index = math.random(1, #self.allItems)
 		if not pickedIndexes[index] then
@@ -385,11 +368,11 @@ function ShopState:randomizeItems()
 			table.insert(self.itemsForSale, self.allItems[index])
 
 			-- coluna centralizada
-			local columnCenterX = (DESCRIPTION_START_X + DESCRIPTION_WIDTH / 2)
-				+ (pickedCount - 1) * (DESCRIPTION_WIDTH + DESCRIPTION_GAP)
+			local columnCenterX = DESCRIPTION_START_X + DESCRIPTION_WIDTH / 2 + (pickedCount - 1) * (DESCRIPTION_WIDTH + DESCRIPTION_GAP)
+			local descriptionCenterX = descriptionStartX + DESCRIPTION_WIDTH / 2 + (pickedCount - 1) * (DESCRIPTION_WIDTH + DESCRIPTION_GAP)
 
 			-- descrição
-			local descX = columnCenterX - DESCRIPTION_WIDTH / 2
+			local descX = descriptionCenterX - DESCRIPTION_WIDTH / 2
 			local descY = DESCRIPTION_Y + (pickedCount == 2 and 60 or 0)
 			local desc = DescriptionCard.new(self.allItems[index], { x = descX, y = descY })
 			table.insert(self.descriptionCards, desc)
@@ -537,6 +520,11 @@ function ShopState:draw()
 	local signW = sign:getWidth() * signScale
 	love.graphics.draw(sign, (screenW - signW) / 2, 40, 0, signScale, signScale)
 
+	-- reset de cor
+	love.graphics.setColor(1, 1, 1)
+end
+
+function ShopState:drawUI()
 	-- descrições
 	for i, card in ipairs(self.descriptionCards) do
 		if i == self.selectedItemIndex then

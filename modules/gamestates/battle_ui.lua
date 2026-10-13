@@ -52,7 +52,7 @@ end
 
 function BattleUI:draw()
 	local battle = self.battle
-	local screenW, screenH = Resolution.getGameDimensions()
+	local screenW, screenH = Resolution.getUIDimensions()
 
 	-- Ícone central e informações dos combatentes.
 	battle.beatIcon:draw()

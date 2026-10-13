@@ -115,7 +115,7 @@ function ActionSlot.new(action, index, scale, screenW, text)
 	slot.actionSprite = love.graphics.newImage("assets/UI/combat/" .. action .. ".png")
 
 	-- position
-	local y = Resolution.getGameHeight() - 100
+	local y = Resolution.getUIHeight() - 100
 	local slotWidth = slot.socket:getWidth() * scale
 	local totalWidth = 5 * slotWidth + 4 * slot.gap
 	local startX = (screenW - totalWidth) / 2
@@ -693,7 +693,7 @@ function BattleState:resetUI()
 	self.itemSlots = nil
 	self.plusAmmoTexts = {}
 	self.actionFeedback = {}
-	local screenW, screenH = Resolution.getGameDimensions()
+	local screenW, screenH = Resolution.getUIDimensions()
 	self.counter = CounterText.new({ x = screenW / 2, y = screenH * 2 / 5 })
 	self.actionFeedback.player = ActionFeedbackText.new({ 2.5 * screenW / 12, screenH * 0.27 })
 	self.actionFeedback.oponent = ActionFeedbackText.new({ 9.5 * screenW / 12, screenH * 0.27 })
@@ -802,7 +802,7 @@ function BattleState:addPlusAmmoText(criatura, amount)
 		return
 	end
 
-	local width, height = Resolution.getGameDimensions()
+	local width, height = Resolution.getUIDimensions()
 	local xOffset = 150
 	local yOffset = math.random(-50, 50)
 	local pos = criatura.name == Player.name and { 2.5 * width / 12 + xOffset, height / 2 + yOffset }
@@ -819,7 +819,7 @@ function BattleState:addDamageOrHealingText(criatura, amount)
 		return
 	end
 
-	local width, height = Resolution.getGameDimensions()
+	local width, height = Resolution.getUIDimensions()
 	local xOffset = 150
 	local yOffset = math.random(-50, 50)
 	local pos = criatura.name == Player.name and { 2.5 * width / 12 + xOffset, height / 2.5 + yOffset }
@@ -1108,67 +1108,67 @@ function BattleState:shuffleActionSlots()
 	end
 end
 
-function BattleState:mousepressed(x, y, button, istouch)
-    if not self.actionsEnabled then return end
-    if button ~= 1 then return end
+function BattleState:uiMousepressed(x, y, button, istouch)
+	if not self.actionsEnabled then return end
+	if button ~= 1 then return end
 
-    -- verifica clique nos botões de ação
-    for i, slot in pairs(self.actionSlots) do
-        if not slot.disabled then
-            local w = slot.socket:getWidth() * slot.scale
-            local h = slot.socket:getHeight() * slot.scale
-            local startX = slot.pos[1] - w / 2
-            local startY = slot.pos[2] - h / 2
-            
-            if isPointInRect(x, y, startX, startY, w, h) then
-                self:setAction(i)
-                return
-            end
-        end
-    end
+	-- verifica clique nos botões de ação
+	for i, slot in pairs(self.actionSlots) do
+		if not slot.disabled then
+			local w = slot.socket:getWidth() * slot.scale
+			local h = slot.socket:getHeight() * slot.scale
+			local startX = slot.pos[1] - w / 2
+			local startY = slot.pos[2] - h / 2
 
-    -- verifica clique nos itens
-    if self.itemSlots then
-        local socketW = self.itemSlots.socket:getWidth() * self.itemSlots.scale
-        local socketH = self.itemSlots.socket:getHeight() * self.itemSlots.scale
-        local itemScale = 0.25
-        local pos = self.itemSlots.pos
+			if isPointInRect(x, y, startX, startY, w, h) then
+				self:setAction(i)
+				return
+			end
+		end
+	end
 
-        local function checkItemClick(item, offsetX, offsetY)
-            if item and item.quantity > 0 then
-                local itemW = item.sprite:getWidth() * itemScale
-                local itemH = item.sprite:getHeight() * itemScale
+	-- verifica clique nos itens
+	if self.itemSlots then
+		local socketW = self.itemSlots.socket:getWidth() * self.itemSlots.scale
+		local socketH = self.itemSlots.socket:getHeight() * self.itemSlots.scale
+		local itemScale = 0.25
+		local pos = self.itemSlots.pos
 
-                local itemX = pos[1] + offsetX - itemW / 2
-                local itemY = pos[2] + offsetY - itemH / 2
+		local function checkItemClick(item, offsetX, offsetY)
+			if item and item.quantity > 0 then
+				local itemW = item.sprite:getWidth() * itemScale
+				local itemH = item.sprite:getHeight() * itemScale
 
-                -- padding de 12 pixels para facilitar o clique no celular / mouse
-                local padding = 12 
+				local itemX = pos[1] + offsetX - itemW / 2
+				local itemY = pos[2] + offsetY - itemH / 2
 
-                if isPointInRect(x, y, itemX - padding, itemY - padding, itemW + padding * 2, itemH + padding * 2) then
-                    return true
-                end
-            end
-            return false
-        end
+				-- padding de 12 pixels para facilitar o clique no celular / mouse
+				local padding = 12
 
-        -- uso de itens
-        if checkItemClick(Player.inventory.items[1], -socketW / 4 + 4, -socketH / 4 + 8) then
-            Player:useBuff(Player.inventory.items[1])
-            Combat.playBattleSound(self.sounds.select)
-            return
-        end
-        if checkItemClick(Player.inventory.items[2], -socketW / 4 + 4, socketH / 4) then
-            Player:useBuff(Player.inventory.items[2])
-            Combat.playBattleSound(self.sounds.select)
-            return
-        end
-        if checkItemClick(Player.inventory.items[3], socketW / 4 - 8, 0) then
-            Player:useBuff(Player.inventory.items[3])
-            Combat.playBattleSound(self.sounds.select)
-            return
-        end
-    end
+				if isPointInRect(x, y, itemX - padding, itemY - padding, itemW + padding * 2, itemH + padding * 2) then
+					return true
+				end
+			end
+			return false
+		end
+
+		-- uso de itens
+		if checkItemClick(Player.inventory.items[1], -socketW / 4 + 4, -socketH / 4 + 8) then
+			Player:useBuff(Player.inventory.items[1])
+			Combat.playBattleSound(self.sounds.select)
+			return
+		end
+		if checkItemClick(Player.inventory.items[2], -socketW / 4 + 4, socketH / 4) then
+			Player:useBuff(Player.inventory.items[2])
+			Combat.playBattleSound(self.sounds.select)
+			return
+		end
+		if checkItemClick(Player.inventory.items[3], socketW / 4 - 8, 0) then
+			Player:useBuff(Player.inventory.items[3])
+			Combat.playBattleSound(self.sounds.select)
+			return
+		end
+	end
 end
 
 return BattleState

@@ -2,6 +2,7 @@ local Resolution = {}
 
 local GAME_WIDTH = 1920
 local GAME_HEIGHT = 1080
+local UI_SCALE = 1
 
 -- Dimensões lógicas usadas por todo o layout do jogo.
 function Resolution.getGameWidth()
@@ -14,6 +15,26 @@ end
 
 function Resolution.getGameDimensions()
 	return GAME_WIDTH, GAME_HEIGHT
+end
+
+function Resolution.setUIScale(scale)
+	UI_SCALE = math.max(1, math.min(scale or 1, 1.35))
+end
+
+function Resolution.getUIScale()
+	return UI_SCALE
+end
+
+function Resolution.getUIWidth()
+	return GAME_WIDTH / UI_SCALE
+end
+
+function Resolution.getUIHeight()
+	return GAME_HEIGHT / UI_SCALE
+end
+
+function Resolution.getUIDimensions()
+	return Resolution.getUIWidth(), Resolution.getUIHeight()
 end
 
 function Resolution.getGameAspectRatio()
@@ -63,6 +84,12 @@ function Resolution.toGameCoordinates(x, y)
 	end
 
 	return gameX, gameY
+end
+
+function Resolution.toUICoordinates(x, y)
+	local gameX, gameY = Resolution.toGameCoordinates(x, y)
+	if not gameX then return nil, nil end
+	return gameX / UI_SCALE, gameY / UI_SCALE
 end
 
 function Resolution.toScreenCoordinates(x, y)

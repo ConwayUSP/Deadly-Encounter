@@ -7,12 +7,14 @@ require("modules.engine.camera")
 require("modules.gamectx")
 require("modules.gamestate")
 require("modules.oponent")
+require("modules.utils")
 
 Player = require("modules.player")
 
 local Resolution = require("modules.resolution")
 local GAME_WIDTH, GAME_HEIGHT = Resolution.getGameDimensions()
 local gameCanvas
+local uiCanvas
 
 GameCtx = CTX.MENU
 camera = Camera.new()
@@ -37,8 +39,12 @@ function SetGameCtx(newCtx)
 end
 
 function love.load()
+	Resolution.setUIScale(isMobile() and 1.25 or 1.0)
+	local uiW, uiH = Resolution.getUIDimensions()
 	gameCanvas = love.graphics.newCanvas(GAME_WIDTH, GAME_HEIGHT, { dpiscale = 1 })
+	uiCanvas = love.graphics.newCanvas(math.floor(uiW + 0.5), math.floor(uiH + 0.5), { dpiscale = 1 })
 	gameCanvas:setFilter("linear", "linear")
+	uiCanvas:setFilter("linear", "linear")
 
 	-- carrega o estado inicial manualmente para usar uma transição
 	GAMESTATE[GameCtx]:load()
@@ -63,19 +69,29 @@ function love.draw()
 		camera:attach()
 			gameState:draw()
 		camera:detach()
-		if gameState.drawUI then
-			gameState:drawUI()
-		end
-		MainTransition:draw()
+	love.graphics.setCanvas()
+
+	love.graphics.setCanvas(uiCanvas)
+	love.graphics.clear(0, 0, 0, 0)
+	if gameState.drawUI then
+		gameState:drawUI()
+	end
 	love.graphics.setCanvas()
 
 	local scale, x, y = Resolution.getViewport()
+	local uiScale = Resolution.getUIScale()
 	local postProcessShader = gameState.getPostProcessShader and gameState:getPostProcessShader() or nil
 	love.graphics.clear(0, 0, 0, 1)
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.setShader(postProcessShader)
 	love.graphics.draw(gameCanvas, x, y, 0, scale, scale)
 	love.graphics.setShader()
+	love.graphics.draw(uiCanvas, x, y, 0, scale * uiScale, scale * uiScale)
+	love.graphics.push()
+	love.graphics.translate(x, y)
+	love.graphics.scale(scale, scale)
+	MainTransition:draw()
+	love.graphics.pop()
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -85,19 +101,24 @@ function love.keypressed(key, scancode, isrepeat)
 
 	if MainTransition.isActive then return end
 
-	if key == "s" then
-		SetGameCtx(CTX.SHOP)
-	end
+	-- if key == "s" then
+	-- 	SetGameCtx(CTX.SHOP)
+	-- end
 
 	GAMESTATE[GameCtx]:keypressed(key, scancode, isrepeat)
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
-    if MainTransition.isActive then return end
-	local gameX, gameY = Resolution.toGameCoordinates(x, y)
-	if not gameX then return end
+	if MainTransition.isActive then return end
 
-    if GAMESTATE[GameCtx].mousepressed then
-        GAMESTATE[GameCtx]:mousepressed(gameX, gameY, button, istouch)
+	local gameState = GAMESTATE[GameCtx]
+	local inputX, inputY = Resolution.toGameCoordinates(x, y)
+	if not inputX then return end
+
+	if gameState.uiMousepressed then
+		inputX, inputY = Resolution.toUICoordinates(x, y)
+		gameState:uiMousepressed(inputX, inputY, button, istouch)
+	elseif gameState.mousepressed then
+		gameState:mousepressed(inputX, inputY, button, istouch)
     end
 end
