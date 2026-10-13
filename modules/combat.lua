@@ -34,16 +34,26 @@ Combat.soundPriority = {
 Combat.queuedSounds = {}
 Combat.queuedSoundsBySource = {}
 Combat.baseVolumes = {}
+Combat.muffleHighgainBySource = setmetatable({}, { __mode = "k" })
+
+local MUFFLE_FILTER_EPSILON = 0.0001
 
 function Combat.applyHealthMuffle(sound)
 	local healthRatio = math.max(0, math.min(1, Player.hp / Player.maxHp))
 	local muffleAmount = (1 - healthRatio) ^ 2
+	local highgain = 1 - 0.95 * muffleAmount
+	local previousHighgain = Combat.muffleHighgainBySource[sound]
+
+	if previousHighgain and math.abs(previousHighgain - highgain) < MUFFLE_FILTER_EPSILON then
+		return
+	end
 
 	sound:setFilter({
 		type = "lowpass",
 		volume = 1,
-		highgain = 1 - 0.95 * muffleAmount,
+		highgain = highgain,
 	})
+	Combat.muffleHighgainBySource[sound] = highgain
 end
 
 function Combat.playBattleSound(sound)

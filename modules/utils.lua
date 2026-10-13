@@ -1,13 +1,14 @@
-function returnFont(size)
-  local path = "assets/fonts/"
-  local name = "Cute Dino"
-  local fontPath = path .. name .. ".ttf"
+local fontCache = {}
 
-  if love.filesystem.getInfo(fontPath) then
-    return love.graphics.newFont(fontPath, size)
-  else
-    return love.graphics.newFont(size)
+function returnFont(size)
+  if fontCache[size] then
+    return fontCache[size]
   end
+
+  local fontPath = "assets/fonts/Cute Dino.ttf"
+  local font = love.filesystem.getInfo(fontPath) and love.graphics.newFont(fontPath, size) or love.graphics.newFont(size)
+  fontCache[size] = font
+  return font
 end
 
 function capitalize(string)

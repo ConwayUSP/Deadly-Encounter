@@ -536,6 +536,75 @@ function PlusAmmoText:draw()
 end
 
 ----------------------------------------
+-- Texto reutilizável de feedback da ação
+----------------------------------------
+
+local ACTION_FEEDBACK_FADE_DELAY = 0.5
+local ACTION_FEEDBACK_FADE_DURATION = 1.5
+local ACTION_FEEDBACK_DURATION = ACTION_FEEDBACK_FADE_DELAY + ACTION_FEEDBACK_FADE_DURATION
+
+local ActionFeedbackText = {}
+ActionFeedbackText.__index = ActionFeedbackText
+
+function ActionFeedbackText.new(pos)
+	local feedback = setmetatable({}, ActionFeedbackText)
+	feedback.font = returnFont(64)
+	feedback.drawable = love.graphics.newText(feedback.font, "")
+	feedback.pos = pos
+	feedback.shadowOffset = 5
+	feedback.color = { 1, 1, 1, 1 }
+	feedback.timer = 0
+	feedback.elapsed = 0
+	feedback.scale = 1
+	feedback.active = false
+	return feedback
+end
+
+function ActionFeedbackText:show(content, color)
+	self.drawable:set(content or "")
+	self.color[1] = color[1]
+	self.color[2] = color[2]
+	self.color[3] = color[3]
+	self.color[4] = color[4] or 1
+	self.timer = ACTION_FEEDBACK_DURATION
+	self.elapsed = 0
+	self.scale = 1
+	self.active = true
+end
+
+function ActionFeedbackText:update(dt)
+	if not self.active then
+		return
+	end
+
+	self.timer = math.max(0, self.timer - dt)
+	self.elapsed = math.min(ACTION_FEEDBACK_DURATION, self.elapsed + dt)
+	self.scale = 1 + self.elapsed / 10
+
+	if self.timer == 0 then
+		self.active = false
+	end
+end
+
+function ActionFeedbackText:draw()
+	if not self.active then
+		return
+	end
+
+	local alpha = math.min(1, self.timer / ACTION_FEEDBACK_FADE_DURATION)
+	local originX = self.drawable:getWidth() / 2
+	local originY = self.drawable:getHeight() / 2
+
+	love.graphics.push("all")
+	love.graphics.setShader()
+	love.graphics.setColor(0, 0, 0, alpha)
+	love.graphics.draw(self.drawable, self.pos[1] + self.shadowOffset, self.pos[2] + self.shadowOffset, 0, self.scale, self.scale, originX, originY)
+	love.graphics.setColor(self.color[1], self.color[2], self.color[3], alpha * self.color[4])
+	love.graphics.draw(self.drawable, self.pos[1], self.pos[2], 0, self.scale, self.scale, originX, originY)
+	love.graphics.pop()
+end
+
+----------------------------------------
 -- Estado do jogo no contexto de batalha
 ----------------------------------------
 
@@ -551,6 +620,7 @@ BattleState.actionSlots = {}
 BattleState.counter = nil
 BattleState.itemSlots = nil
 BattleState.plusAmmoTexts = {}
+BattleState.actionFeedback = {}
 BattleState.ui = nil
 BattleState.oponentPool = generateOponentPool()
 BattleState.battleNum = 1
@@ -622,8 +692,11 @@ function BattleState:resetUI()
 	self.actionSlots = {}
 	self.itemSlots = nil
 	self.plusAmmoTexts = {}
+	self.actionFeedback = {}
 	local screenW, screenH = Resolution.getGameDimensions()
 	self.counter = CounterText.new({ x = screenW / 2, y = screenH * 2 / 5 })
+	self.actionFeedback.player = ActionFeedbackText.new({ 2.5 * screenW / 12, screenH * 0.27 })
+	self.actionFeedback.oponent = ActionFeedbackText.new({ 9.5 * screenW / 12, screenH * 0.27 })
 
 	-- coisa
 	self.sprites.coisa = love.graphics.newImage("assets/UI/combat/coisa.png")
@@ -703,65 +776,13 @@ function BattleState:nextBattle()
 	Player:resetForBattle()
 end
 
--- simula um confronto entre o player e o oponente, atualizando o historico do combate
-local ACTION_FEEDBACK_FADE_DELAY = 0.5
-local ACTION_FEEDBACK_FADE_DURATION = 1.5
-local ACTION_FEEDBACK_DURATION = ACTION_FEEDBACK_FADE_DELAY + ACTION_FEEDBACK_FADE_DURATION
-
-local function updateActionFeedbackText(text, dt)
-	text.scale = text.scale and (text.scale + math.sin(dt / 10)) or 1
-	text.color[4] = math.min(1, math.max(0, text.timer / ACTION_FEEDBACK_FADE_DURATION))
-end
-
 function BattleState:simulateBattle()
 	local turnResult = simulateTurn(Player, self.oponent, self.hist)
 	self.hist:addSnapshot(Player)
 
-	local width, height = Resolution.getGameDimensions()
-	self.texts.playerActionShadow = Text.new(
-		toPrettyActionName(Player.action),
-		64,
-		{ 0, 0, 0, 1 },
-		{ 2.5 * width / 12 + 5, height * 0.27 + 5 },
-		0,
-		0,
-		ACTION_FEEDBACK_DURATION,
-		updateActionFeedbackText
-	)
-	self.texts.playerActionShadow.isShadow = true
-	self.texts.playerAction = Text.new(
-		toPrettyActionName(Player.action),
-		64,
-		mapToColor(Player.action),
-		{ 2.5 * width / 12, height * 0.27 },
-		0,
-		0,
-		ACTION_FEEDBACK_DURATION,
-		updateActionFeedbackText
-	)
-
 	local oponentAction = self.oponent.action
-	self.texts.oponentActionShadow = Text.new(
-		toPrettyActionName(oponentAction),
-		64,
-		{ 0, 0, 0, 1 },
-		{ 9.5 * width / 12 + 5, height * 0.27 + 5 },
-		0,
-		0,
-		ACTION_FEEDBACK_DURATION,
-		updateActionFeedbackText
-	)
-	self.texts.oponentActionShadow.isShadow = true
-	self.texts.oponentAction = Text.new(
-		toPrettyActionName(oponentAction),
-		64,
-		mapToColor(oponentAction),
-		{ 9.5 * width / 12, height * 0.27 },
-		0,
-		0,
-		ACTION_FEEDBACK_DURATION,
-		updateActionFeedbackText
-	)
+	self.actionFeedback.player:show(toPrettyActionName(Player.action), mapToColor(Player.action))
+	self.actionFeedback.oponent:show(toPrettyActionName(oponentAction), mapToColor(oponentAction))
 
 	if turnResult ~= Combat.ONGOING then
 		self.finalResult = turnResult

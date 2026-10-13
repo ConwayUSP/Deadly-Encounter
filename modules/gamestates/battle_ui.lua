@@ -39,6 +39,9 @@ function BattleUI:update(dt, musicPosition, isBattleActive)
 		healthBar:update(dt)
 	end
 
+	battle.actionFeedback.player:update(dt)
+	battle.actionFeedback.oponent:update(dt)
+
 	for _, text in pairs(battle.texts) do
 		if text.update then
 			text:update(dt)
@@ -85,7 +88,7 @@ function BattleUI:draw()
 	-- Textos usam suas próprias cores; nenhum shader da UI deve ser herdado aqui.
 	love.graphics.setShader()
 
-	-- Nomes, ações e feedbacks flutuantes.
+	-- Nomes e feedbacks flutuantes.
 	for _, text in pairs(battle.texts) do
 		if text.isShadow then
 			text:draw()
@@ -95,6 +98,9 @@ function BattleUI:draw()
 	for _, plus in ipairs(battle.plusAmmoTexts) do
 		plus:draw()
 	end
+
+	battle.actionFeedback.player:draw()
+	battle.actionFeedback.oponent:draw()
 
 	for _, text in pairs(battle.texts) do
 		if not text.isShadow then
