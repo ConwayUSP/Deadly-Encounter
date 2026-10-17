@@ -1,3 +1,8 @@
 .zed/
 .settings/
 .luarc.json
+
+# Chaves e credenciais Android (NUNCA comitar)
+*.keystore
+*.jks
+keystore_base64.txt

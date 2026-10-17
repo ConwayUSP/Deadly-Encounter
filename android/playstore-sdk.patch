@@ -1,0 +1,34 @@
+diff --git a/app/build.gradle b/app/build.gradle
+index b5f49c2..96058d7 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -10,9 +10,9 @@ android {
+         applicationId project.properties["app.application_id"]
+         versionCode project.properties["app.version_code"].toInteger()
+         versionName project.properties["app.version_name"]
+-        minSdk 16
+-        compileSdk 34
+-        targetSdk 34
++        minSdk 24
++        compileSdk 36
++        targetSdk 36
+         
+         def getAppName = {
+             def nameArray = project.properties["app.name_byte_array"]
+diff --git a/love/build.gradle b/love/build.gradle
+index eb3dc16..a91a345 100644
+--- a/love/build.gradle
++++ b/love/build.gradle
+@@ -10,9 +10,9 @@ android {
+     ndkVersion '25.2.9519653'
+ 
+     defaultConfig {
+-        minSdk 16
+-        compileSdk 34
+-        targetSdk 34
++        minSdk 24
++        compileSdk 36
++        targetSdk 36
+         externalNativeBuild {
+             ndkBuild {
+                 arguments "-j" + Runtime.runtime.availableProcessors()

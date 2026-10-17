@@ -1,19 +1,35 @@
-name: Gerar APK Android
+name: Gerar Pacotes Android (APK e AAB)
 
 on:
   workflow_dispatch:
+    inputs:
+      release_mode:
+        description: 'Gerar versão de produção para Play Store (AAB + APK assinado)'
+        type: boolean
+        required: true
+        default: false
+      version_string:
+        description: 'Versão do App (ex: 1.0.0)'
+        type: string
+        required: false
+        default: '1.0.0'
 
 permissions:
   contents: read
 
 jobs:
   build-android:
-    name: Compilar APK
+    name: Compilar Android
     runs-on: ubuntu-latest
 
     steps:
       - name: Baixar o projeto
         uses: actions/checkout@v4
+
+      - name: Definir versionCode incremental
+        id: versioning
+        run: |
+          echo "code=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
       - name: Criar o pacote game.love
         uses: love-actions/love-actions-core@v1
@@ -21,7 +37,7 @@ jobs:
           build-list: ./assets ./modules ./music ./sounds ./conf.lua ./main.lua
           package-path: ./game.love
 
-      - name: Compilar o APK
+      - name: Compilar APK (Debug ou Release)
         id: android-build
         uses: love-actions/love-actions-android@v2
         with:
@@ -31,15 +47,28 @@ jobs:
           love-package: "./game.love"
           resource-path: "./android/res"
           icon-specifier: "@drawable/app_icon"
+          love-patch: "./android/playstore-sdk.patch"
           product-name: "deadly-encounter"
-          version-string: "1.0.0"
-          version-code: "1"
+          version-string: ${{ inputs.version_string || '1.0.0' }}
+          version-code: ${{ steps.versioning.outputs.code }}
           output-folder: "./dist"
+          # Credenciais de assinatura (injetadas apenas se release_mode estiver marcado)
+          keystore-alias: ${{ inputs.release_mode && secrets.ANDROID_KEYSTORE_ALIAS || '' }}
+          keystore-base64: ${{ inputs.release_mode && secrets.ANDROID_KEYSTORE_BASE64 || '' }}
+          keystore-key-password: ${{ inputs.release_mode && secrets.ANDROID_KEYSTORE_KEYPASSWORD || '' }}
+          keystore-store-password: ${{ inputs.release_mode && secrets.ANDROID_KEYSTORE_STOREPASSWORD || '' }}
 
-      - name: Disponibilizar o APK para download
+      - name: Compilar o AAB (Play Store)
+        if: ${{ inputs.release_mode }}
+        run: |
+          cd love-actions-android/love-android
+          ./gradlew bundleEmbedRecordRelease
+          cp app/build/outputs/bundle/embedRecordRelease/app-embed-record-release.aab ../../dist/deadly-encounter-release.aab
+
+      - name: Disponibilizar artefatos para download
         uses: actions/upload-artifact@v4
         with:
-          name: deadly-encounter-android
-          path: ./dist/*.apk
+          name: deadly-encounter-${{ inputs.release_mode && 'release' || 'test' }}-v${{ inputs.version_string || '1.0.0' }}-build${{ steps.versioning.outputs.code }}
+          path: ./dist/*
           if-no-files-found: error
           retention-days: 30
