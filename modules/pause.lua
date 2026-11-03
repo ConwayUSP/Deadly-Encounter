@@ -1,6 +1,8 @@
--- Modulo Pause
--- Implementa menu de pausa na cena de batalha e lojinha
--- Permite pausar o jogo, abrir o tutorial, resumir ou encerrar a partida.
+-- Renderiza um botão de pausa dentro da Arena de Batalha e Loja
+-- Possui dois modos de tela: "menu" com botões de resumir, encerrar a partida ou abrir o tutorial
+-- "tutorial" mostra o tutorial de referência do jogo.
+-- "<Esc>" para entrar e sair do menu de pausa
+-- Toca a musica do menu principal do jogo de fundo
 
 require("modules.engine.text")
 require("modules.utils")
@@ -9,8 +11,7 @@ local Resolution = require("modules.resolution")
 local Pause = {}
 
 Pause.isOpen = false
-Pause.view = "menu"
-Pause.pausedSources = nil
+Pause.view = "menu" -- "menu" | "tutorial"
 Pause.buttons = {}
 Pause.texts = {}
 Pause.sounds = {}
@@ -36,6 +37,7 @@ function Pause.load()
         { label = "Quit",     action = function() Pause.quitToMenu() end },
     }
 
+    -- calcula posicao dos botoes, centrados na tela e com espaçamento
     local totalHeight = #options * BUTTON_HEIGHT + (#options - 1) * BUTTON_GAP
     local startY = (height - totalHeight) / 2 + 40 -- espaço para o titulo
     local x = (width - BUTTON_WIDTH) / 2
@@ -54,6 +56,7 @@ function Pause.load()
     end
 
     Pause.texts.title = Text.new("Paused", 72, { 1, 1, 1, 1 }, { width / 2, startY - 80 }, 0, true)
+
     Pause.texts.tutorialPrompt = Text.new(
         isMobile() and "Tap to Go back" or "Press any key to go back",
         32,
@@ -69,10 +72,10 @@ function Pause.load()
 
     Pause.sounds.bg = love.audio.newSource("sounds/menu_bg.wav", "static")
 	Pause.sounds.bg:setLooping(true)
-	Pause.sounds.bg:setVolume(0.25)
+	Pause.sounds.bg:setVolume(0.15)
 end
 
---  Permite pausa o jogo no campo de batalha ou na loja
+--  Permite pausar o jogo apenas no campo de batalha ou na loja
 function Pause.canPause()
     return GameCtx == CTX.BATTLE or GameCtx == CTX.SHOP
 end
@@ -80,14 +83,14 @@ end
 function Pause.open()
     Pause.isOpen = true
     Pause.view = "menu"
-    Pause.pausedSources = love.audio.pause()
+    Pause.sounds.paused = love.audio.pause()
     love.audio.play(Pause.sounds.bg)
 end
 
 function Pause.resume()
     love.audio.pause(Pause.sounds.bg)
-    love.audio.play(Pause.pausedSources)
-    Pause.pausedSources = nil
+    love.audio.play(Pause.sounds.paused)
+    Pause.sounds.paused = nil
     Pause.isOpen = false
 end
 
@@ -96,16 +99,16 @@ function Pause.openTutorial()
     Pause.view = "tutorial"
 end
 
+-- volta ao menu do jogo, limpando recursos de audio
 function Pause.quitToMenu()
     love.audio.stop()
-    Pause.pausedSources = nil
+    Pause.sounds.paused = nil
     Pause.isOpen = false
     SetGameCtx(CTX.MENU)
 end
 
 function Pause.keypressed(key)
     if Pause.isOpen then
-        -- quando no tutorial, qualquer tecla volta ao menu
         if Pause.view == "tutorial" then
             Pause.view = "menu"
         elseif Pause.view == "menu" and key == "escape" then
@@ -122,8 +125,10 @@ function Pause.mousepressed(x, y, button)
     if button ~= 1 then return false end
     local screenX, screenY = Resolution.toScreenCoordinates(x, y)
     if screenX == nil and screenY == nil then return false end
+
     if Pause.isOpen then
         if Pause.view == "menu" then
+            -- executa um botao clicado
             for _, btn in ipairs(Pause.buttons) do
                 if isPointInRect(x, y, btn.x, btn.y, btn.w, btn.h) then
                     btn.action()
@@ -133,6 +138,7 @@ function Pause.mousepressed(x, y, button)
             Pause.view = "menu"
         end
         return true
+    -- abre a pausa se o icon foi clicado
     elseif not Pause.isOpen and Pause.canPause() and isPointInRect(x, y, Pause.icon.x, Pause.icon.y, Pause.icon.w, Pause.icon.h) then
         Pause.open()
         return true
@@ -142,27 +148,40 @@ end
 
 function Pause.draw()
     if not Pause.isOpen and Pause.canPause() then
-        love.graphics.setColor(0, 0, 0, 1)
-        love.graphics.rectangle("fill", Pause.icon.x, Pause.icon.y, Pause.icon.w, Pause.icon.h)
-        love.graphics.setColor(1, 1, 1, 1)
+        Pause.drawIcon()
     elseif Pause.isOpen and Pause.view == "menu" then
-        local screenW, screenH = Resolution.getGameDimensions()
-        love.graphics.setColor(0, 0, 0, 0.6)
-        love.graphics.rectangle("fill", 0, 0, screenW, screenH)
-
-        Pause.texts.title:draw()
-
-        love.graphics.setColor(0.5, 0.5, 0.6, 1)
-        for _, button in ipairs(Pause.buttons) do
-            love.graphics.rectangle("fill", button.x, button.y, button.w, button.h)
-            button.text:draw()
-        end
-        love.graphics.setColor(1, 1, 1, 1)
+        Pause.drawMenuScreen()
     elseif Pause.isOpen and Pause.view == "tutorial" then
-        local screenW, screenH = Resolution.getGameDimensions()
-        love.graphics.draw(Pause.tutorialImage, 0, 0, 0, screenW / Pause.tutorialImage:getWidth(),
-            screenH / Pause.tutorialImage:getHeight())
-        Pause.texts.tutorialPrompt:draw()
+        Pause.drawTutorialScreen()
+    end
+    love.graphics.setColor(1, 1, 1, 1)
+end
+
+function Pause.drawIcon()
+    love.graphics.setColor(0, 0, 0, 1)
+    love.graphics.rectangle("fill", Pause.icon.x, Pause.icon.y, Pause.icon.w, Pause.icon.h)
+    love.graphics.setColor(1, 1, 1, 1)
+end
+
+function Pause.drawTutorialScreen()
+    local screenW, screenH = Resolution.getGameDimensions()
+    love.graphics.draw(Pause.tutorialImage, 0, 0, 0, screenW / Pause.tutorialImage:getWidth(),
+        screenH / Pause.tutorialImage:getHeight())
+    Pause.texts.tutorialPrompt:draw()
+end
+
+function Pause.drawMenuScreen()
+    -- cria um véu semi transparente no fundo
+    local screenW, screenH = Resolution.getGameDimensions()
+    love.graphics.setColor(0, 0, 0, 0.6)
+    love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+
+    Pause.texts.title:draw()
+
+    love.graphics.setColor(0.5, 0.5, 0.6, 1)
+    for _, button in ipairs(Pause.buttons) do
+        love.graphics.rectangle("fill", button.x, button.y, button.w, button.h)
+        button.text:draw()
     end
     love.graphics.setColor(1, 1, 1, 1)
 end
