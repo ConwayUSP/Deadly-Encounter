@@ -8,6 +8,7 @@ require("modules.gamectx")
 require("modules.gamestate")
 require("modules.oponent")
 require("modules.utils")
+local Pause = require("modules.pause")
 
 Player = require("modules.player")
 
@@ -48,6 +49,9 @@ function love.load()
 
 	-- carrega o estado inicial manualmente para usar uma transição
 	GAMESTATE[GameCtx]:load()
+
+    -- monta sistema de pausa
+    Pause.load()
 end
 
 function love.update(dt)
@@ -56,9 +60,13 @@ function love.update(dt)
 	if MainTransition.isActive then
 		return
 	end
-	
+
+    if Pause.isOpen then
+        return
+    end
+
 	GAMESTATE[GameCtx]:update(dt)
-	camera:update(dt)	
+	camera:update(dt)
 end
 
 function love.draw()
@@ -75,7 +83,8 @@ function love.draw()
 	love.graphics.clear(0, 0, 0, 0)
 	if gameState.drawUI then
 		gameState:drawUI()
-	end
+    end
+    Pause.draw()
 	love.graphics.setCanvas()
 
 	local scale, x, y = Resolution.getViewport()
@@ -95,12 +104,18 @@ function love.draw()
 end
 
 function love.keypressed(key, scancode, isrepeat)
-	if key == "escape" then
-		love.event.quit()
-	end
-
 	if MainTransition.isActive then return end
 
+    if Pause.keypressed(key) then return end
+
+    if key == "escape" then
+        if GameCtx == CTX.MENU then
+            love.event.quit()
+        elseif GameCtx == CTX.DEATH_SCREEN or GameCtx == CTX.VICTORY_SCREEN then
+            SetGameCtx(CTX.MENU)
+            return
+        end
+    end
 	-- if key == "s" then
 	-- 	SetGameCtx(CTX.SHOP)
 	-- end
@@ -110,6 +125,7 @@ end
 
 function love.mousepressed(x, y, button, istouch, presses)
 	if MainTransition.isActive then return end
+    if Pause.mousepressed(x, y, button) then return end
 
 	local gameState = GAMESTATE[GameCtx]
 	local inputX, inputY = Resolution.toGameCoordinates(x, y)
