@@ -16,7 +16,7 @@ Deadly Encounter is a fast-paced 007-game, where you encounter six enemies, each
 
 ### Steps
 
-1. Simplily clone this repository and enter in the folder
+1. Simply clone this repository and enter in the folder
 
 ```sh
 git clone https://github.com/ConwayUSP/Deadly-Encounter.git
@@ -73,7 +73,7 @@ ACTIONS:
 - Attack: spend 1 ammo to do some damage
 - Super Attack: spend 2 ammo to do a lot of damage
 - Defense: negates `Attack` damage and reduces `Super Attack` damage
-- **Counter** Attack: redirects the oponent damage to himself. You have 3 counters per battle
+- **Counter** Attack: redirects the opponent damage to himself. You have 3 counters per battle
 
 After each battle, you go to the shop. There, the guy in the **counter** will give you items and upgrades - choose wisely!
 
