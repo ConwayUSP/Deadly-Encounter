@@ -7,6 +7,7 @@ require("modules.utils")
 require("modules.fs")
 require("modules.shaders")
 local Resolution = require("modules.resolution")
+local Stats = require("modules.stats")
 
 ----------------------------------------
 -- Constantes
@@ -387,6 +388,7 @@ end
 -- faz o player comprar um item, adicionando ele ao inventário e removendo da loja
 function ShopState:buyItem(item, idx)
 	Player:getBuff(item)
+    Stats.incItemsBought()
 
 	-- remove da lista global
 	for i, baseItem in ipairs(self.allItems) do
@@ -404,6 +406,7 @@ function ShopState:buyItem(item, idx)
 end
 
 function ShopState:update(dt)
+    Stats.tick(dt)
 	for i, card in ipairs(self.descriptionCards) do
 		card:update(dt, i == self.selectedItemIndex)
 	end
