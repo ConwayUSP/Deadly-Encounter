@@ -12,6 +12,15 @@ require("modules.fs")
 local BattleUI = require("modules.gamestates.battle_ui")
 local Resolution = require("modules.resolution")
 
+-- Escala em 70% o layour da batalha caso em PC, mantém a escala em 100% no mobile
+local function getBattleLayout()
+    if isMobile() then
+        return { slotScale = 1.0, itemScale = 1.0, bottomOffset = 124, rowOffsetX = 72}
+    else
+        return { slotScale = 0.7, itemScale = 0.7, bottomOffset = 100, rowOffsetX = 0 }
+    end
+end
+
 ----------------------------------------
 -- Entidade ItemsSlot
 ----------------------------------------
@@ -28,7 +37,25 @@ function ItemSlot.new(items, scale, pos)
 	slot.socket = love.graphics.newImage("assets/UI/combat/consumables_socket.png")
 	slot.font = returnFont(24)
 
+    slot.f = scale / 0.7
+    slot.itemScale = 0.25 * slot.f
+
 	return slot
+end
+
+function ItemSlot:getItemCenterOffset(i)
+	local socketH = self.socket:getHeight() * self.scale
+	local socketW = self.socket:getWidth() * self.scale
+
+    if i == 1 then
+        return -socketW/4 + 4 * self.f, -socketH/4 + 8 * self.f
+    elseif i == 2 then
+        return -socketW/4 + 4 * self.f, socketH/4
+    elseif i == 3 then
+        return socketW/4 - 8 * self.f, 0
+    else
+        return nil, nil
+    end
 end
 
 function ItemSlot:draw()
@@ -40,48 +67,22 @@ function ItemSlot:draw()
 	love.graphics.draw(self.socket, self.pos[1] - socketW / 2, self.pos[2] - socketH / 2, 0, self.scale, self.scale)
 	love.graphics.setFont(self.font)
 
-	local itemScale = 0.25
-	if self.items[3] then
-		local item = self.items[3]
+    for i = 1, #self.items do
+        if self.items[i] then
+            local item = self.items[i]
 
-		if item.quantity > 0 then
-			local itemSprite = item.sprite
-			local itemW = itemSprite:getWidth() * itemScale
-			local itemH = itemSprite:getHeight() * itemScale
-			local posX = self.pos[1] + socketW / 4 - itemW / 2 - 8
-			local posY = self.pos[2] - itemH / 2
-			love.graphics.draw(itemSprite, posX, posY, 0, itemScale, itemScale)
-			love.graphics.print(tostring(item.quantity) .. "x", posX, posY, 0, 0.5)
-		end
-	end
-
-	if self.items[1] then
-		local item = self.items[1]
-
-		if item.quantity > 0 then
-			local itemSprite = item.sprite
-			local itemW = itemSprite:getWidth() * itemScale
-			local itemH = itemSprite:getHeight() * itemScale
-			local posX = self.pos[1] - socketW / 4 - itemW / 2 + 4
-			local posY = self.pos[2] - itemH / 2 - socketH / 4 + 8
-			love.graphics.draw(itemSprite, posX, posY, 0, itemScale, itemScale)
-			love.graphics.print(tostring(item.quantity) .. "x", posX, posY, 0, 0.5)
-		end
-	end
-
-	if self.items[2] then
-		local item = self.items[2]
-
-		if item.quantity > 0 then
-			local itemSprite = item.sprite
-			local itemW = itemSprite:getWidth() * itemScale
-			local itemH = itemSprite:getHeight() * itemScale
-			local posX = self.pos[1] - socketW / 4 - itemW / 2 + 4
-			local posY = self.pos[2] - itemH / 2 + socketH / 4
-			love.graphics.draw(itemSprite, posX, posY, 0, itemScale, itemScale)
-			love.graphics.print(tostring(item.quantity) .. "x", posX, posY, 0, 0.5)
-		end
-	end
+            if item.quantity > 0 then
+                local itemSprite = item.sprite
+                local itemW = itemSprite:getWidth() * self.itemScale
+                local itemH = itemSprite:getHeight() * self.itemScale
+                local offsetX, offsetY = self:getItemCenterOffset(i)
+                local posX = self.pos[1] + offsetX  - itemW / 2
+                local posY = self.pos[2] + offsetY - itemH / 2
+                love.graphics.draw(itemSprite, posX, posY, 0, self.itemScale, self.itemScale)
+                love.graphics.print(tostring(item.quantity) .. "x", posX, posY, 0, 0.5 * self.f)
+            end
+        end
+    end
 
 	-- reset
 	love.graphics.setColor(1, 1, 1, 1)
@@ -94,7 +95,7 @@ end
 ActionSlot = {}
 ActionSlot.__index = ActionSlot
 
-function ActionSlot.new(action, index, scale, screenW, text)
+function ActionSlot.new(action, index, scale, screenW, text, height)
 	local slot = setmetatable({}, ActionSlot)
 	slot.action = action
 	slot.originalIndex = index
@@ -110,12 +111,14 @@ function ActionSlot.new(action, index, scale, screenW, text)
 	slot.isMoving = false
 	slot.gap = 15
 
+    slot.padding = 18 * (scale / 0.7)
+
 	-- sprites
 	slot.socket = love.graphics.newImage("assets/UI/combat/action_socket.png")
 	slot.actionSprite = love.graphics.newImage("assets/UI/combat/" .. action .. ".png")
 
 	-- position
-	local y = Resolution.getUIHeight() - 100
+	local y = height
 	local slotWidth = slot.socket:getWidth() * scale
 	local totalWidth = 5 * slotWidth + 4 * slot.gap
 	local startX = (screenW - totalWidth) / 2
@@ -208,7 +211,7 @@ function ActionSlot:draw()
 
 	love.graphics.setFont(self.font)
 	if self.current and self.total then
-		local padding = 18
+		local padding = self.padding
 		local text = tostring(self.current) .. "/" .. tostring(self.total)
 		love.graphics.print(text, self.pos[1] - socketW / 2 + padding, self.pos[2] - socketH / 2 + padding)
 	end
@@ -687,6 +690,7 @@ function BattleState:syncTimerToMusic(musicPosition)
 end
 
 function BattleState:resetUI()
+
 	self.upgradesOwned = {}
 	self.healthBar = {}
 	self.actionSlots = {}
@@ -741,15 +745,17 @@ function BattleState:resetUI()
 	self.upgradesOwned.player = playerUpgradesOwned
 	self.upgradesOwned.oponent = oponentUpgradesOwned
 
+    local layout = getBattleLayout()
+    local rowY = screenH - layout.bottomOffset
+
 	-- items slots
-	local itemScale = 0.7
-	self.itemSlots = ItemSlot.new(Player.inventory.items, itemScale, { 0, screenH - 100 })
+	local itemScale = layout.itemScale
+	self.itemSlots = ItemSlot.new(Player.inventory.items, itemScale, { 0, rowY })
 
 	local itemSlotW = self.itemSlots.socket:getWidth() * itemScale
 	-- action slots
-	local slotScale = 0.7
 	for i = 1, 5 do
-		self.actionSlots[i] = ActionSlot.new(ACTION_IDX[i], i, slotScale, screenW - itemSlotW)
+		self.actionSlots[i] = ActionSlot.new(ACTION_IDX[i], i, layout.slotScale, screenW - itemSlotW + 2 * layout.rowOffsetX, nil, rowY)
 	end
 
 	self:verifyActionSlots()
@@ -1129,9 +1135,7 @@ function BattleState:uiMousepressed(x, y, button, istouch)
 
 	-- verifica clique nos itens
 	if self.itemSlots then
-		local socketW = self.itemSlots.socket:getWidth() * self.itemSlots.scale
-		local socketH = self.itemSlots.socket:getHeight() * self.itemSlots.scale
-		local itemScale = 0.25
+		local itemScale = self.itemSlots.itemScale
 		local pos = self.itemSlots.pos
 
 		local function checkItemClick(item, offsetX, offsetY)
@@ -1143,7 +1147,7 @@ function BattleState:uiMousepressed(x, y, button, istouch)
 				local itemY = pos[2] + offsetY - itemH / 2
 
 				-- padding de 12 pixels para facilitar o clique no celular / mouse
-				local padding = 12
+				local padding = 12 * self.itemSlots.f
 
 				if isPointInRect(x, y, itemX - padding, itemY - padding, itemW + padding * 2, itemH + padding * 2) then
 					return true
@@ -1153,21 +1157,14 @@ function BattleState:uiMousepressed(x, y, button, istouch)
 		end
 
 		-- uso de itens
-		if checkItemClick(Player.inventory.items[1], -socketW / 4 + 4, -socketH / 4 + 8) then
-			Player:useBuff(Player.inventory.items[1])
-			Combat.playBattleSound(self.sounds.select)
-			return
-		end
-		if checkItemClick(Player.inventory.items[2], -socketW / 4 + 4, socketH / 4) then
-			Player:useBuff(Player.inventory.items[2])
-			Combat.playBattleSound(self.sounds.select)
-			return
-		end
-		if checkItemClick(Player.inventory.items[3], socketW / 4 - 8, 0) then
-			Player:useBuff(Player.inventory.items[3])
-			Combat.playBattleSound(self.sounds.select)
-			return
-		end
+        for i = 1, #Player.inventory.items do
+            local offsetX, offsetY = self.itemSlots:getItemCenterOffset(i)
+            if checkItemClick(Player.inventory.items[i], offsetX, offsetY) then
+                Player:useBuff(Player.inventory.items[i])
+                Combat.playBattleSound(self.sounds.select)
+                return
+            end
+        end
 	end
 end
 

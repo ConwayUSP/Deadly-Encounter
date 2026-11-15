@@ -71,7 +71,7 @@ function BattleUI:draw()
 		- battle.sprites.amount:getWidth()
 		- 20
 	local amountX = startX
-	local amountY = screenH - battle.sprites.amount:getHeight() - 60
+	local amountY = battle.actionSlots[1].originalPos[2] - battle.sprites.amount:getHeight() / 2 + 12
 	love.graphics.draw(battle.sprites.amount, amountX, amountY, 0, 1, 1)
 
 	local prevFont = love.graphics.getFont()

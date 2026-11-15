@@ -1,12 +1,21 @@
 local fontCache = {}
 
+-- Resolve o tamanho da fonte com base no OS
+-- Mobile ganha scaling de 1.25 (16 -> 24, 24 -> 30, 32 -> 40, 36 -> 45) para fontes de até 36px
+local function resolveFontSize(size)
+    if not isMobile() or size >= 48 then
+        return size
+    end
+    return math.max(24, math.floor(size * 1.25 + 0.5))
+end
+
 function returnFont(size)
   if fontCache[size] then
     return fontCache[size]
   end
 
   local fontPath = "assets/fonts/Cute Dino.ttf"
-  local font = love.filesystem.getInfo(fontPath) and love.graphics.newFont(fontPath, size) or love.graphics.newFont(size)
+  local font = love.filesystem.getInfo(fontPath) and love.graphics.newFont(fontPath, resolveFontSize(size)) or love.graphics.newFont(resolveFontSize(size))
   fontCache[size] = font
   return font
 end
@@ -19,6 +28,7 @@ function isMobile()
     local os = love.system.getOS()
     return os == "Android" or os == "iOS"
 end
+
 
 -- Chooses from a list of items using their respective weights
 function weightedChoice(items)
