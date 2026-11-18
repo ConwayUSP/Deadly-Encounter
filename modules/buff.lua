@@ -2,6 +2,7 @@
 -- Importações de Módulos
 ----------------------------------------
 require("modules.engine.animation")
+require("modules.utils")
 
 ----------------------------------------
 -- ENUM de Items e Upgrades
@@ -58,6 +59,9 @@ function ItemUpgrade:draw(pos, scale, withQuantity)
 	love.graphics.draw(self.sprite, pos[1], pos[2], 0, scale, scale)
 	if withQuantity then
 		local qtyText = tostring(self.quantity) .. "x"
+		local previousFont = love.graphics.getFont()
+		love.graphics.setFont(returnFont(24))
 		love.graphics.print(qtyText, pos[1] + 20, pos[2] + 20)
+		love.graphics.setFont(previousFont)
 	end
 end

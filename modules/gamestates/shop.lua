@@ -19,11 +19,11 @@ local SHADER = brightnessShader
 
 local function getShopLayout()
     if isMobile() then
-        return { slotScale = 1.0, columnSpacing = 300, cardScale = 0.75,
-        cardTop = 372, cardOffsetX = 157.5, textWidth = 270}
+        return { slotScale = 1.0, columnSpacing = 300, cardScale = 0.85,
+        cardTop = 372, cardOffsetX = 178.5, textWidth = 290, descriptionSize = 22}
     else
         return { slotScale = 0.75, columnSpacing = 260, cardScale = 0.55,
-        cardTop = 410, cardOffsetX = 120, textWidth = 200}
+        cardTop = 410, cardOffsetX = 120, textWidth = 200, descriptionSize = 16}
     end
 end
 
@@ -53,7 +53,9 @@ function DescriptionCard.new(item, columnCenterX, cardTopExtra, layout)
 	card.item = item
 	card.type = item.type
 	card.title = Text.new(capitalize(item.id), 24, { 1, 1, 1, 1 }, { x, y }, nil, false, math.huge, updateFunc)
-	card.description = Text.new(item.description, 16, { 1, 1, 1, 1 }, { x, y + 30 * f }, nil, false, math.huge, updateFunc, layout.textWidth)
+	local _, titleHeight = card.title:getDimensions()
+	local descriptionY = y + math.max(30 * f, titleHeight + 6)
+	card.description = Text.new(item.description, layout.descriptionSize, { 1, 1, 1, 1 }, { x, descriptionY }, nil, false, math.huge, updateFunc, layout.textWidth)
 
 	card.scale = layout.cardScale
 	card.bg = love.graphics.newImage("assets/UI/shop/description_" .. item.type .. ".png")
@@ -400,7 +402,7 @@ end
 -- faz o player comprar um item, adicionando ele ao inventário e removendo da loja
 function ShopState:buyItem(item, idx)
 	Player:getBuff(item)
-    Stats.incItemsBought()
+	Stats.incItemBought()
 
 	-- remove da lista global
 	for i, baseItem in ipairs(self.allItems) do

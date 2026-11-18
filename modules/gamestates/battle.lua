@@ -36,7 +36,7 @@ function ItemSlot.new(items, scale, pos)
 	slot.pos = pos
 
 	slot.socket = love.graphics.newImage("assets/UI/combat/consumables_socket.png")
-	slot.font = returnFont(24)
+	slot.font = returnFont(isMobile() and 24 or 12)
 
     slot.f = scale / 0.7
     slot.itemScale = 0.25 * slot.f
@@ -80,7 +80,7 @@ function ItemSlot:draw()
                 local posX = self.pos[1] + offsetX  - itemW / 2
                 local posY = self.pos[2] + offsetY - itemH / 2
                 love.graphics.draw(itemSprite, posX, posY, 0, self.itemScale, self.itemScale)
-                love.graphics.print(tostring(item.quantity) .. "x", posX, posY, 0, 0.5 * self.f)
+                love.graphics.print(tostring(item.quantity) .. "x", posX, posY)
             end
         end
     end
@@ -105,7 +105,7 @@ function ActionSlot.new(action, index, scale, screenW, text, height)
 	slot.screen = screenW
 	slot.current = text and text.current or nil
 	slot.total = text and text.total or nil
-	slot.font = returnFont(16)
+	slot.font = returnFont(isMobile() and 22 or 16)
 
 	slot.active = false
 	slot.disabled = false
@@ -368,20 +368,37 @@ function UpgradesOwned.new(initialUpgrades, initialPos, direction)
 	upgradesOwned.pos = initialPos
 	upgradesOwned.direction = direction
 	upgradesOwned.scale = 0.25
+	upgradesOwned.quantityFont = returnFont(20)
 
 	return upgradesOwned
 end
 
 function UpgradesOwned:draw()
 	local x, y = self.pos[1], self.pos[2]
-	local spacing = 0
 	local size = self.upgrades[1] and self.upgrades[1].sprite:getWidth() * self.scale or 0
-	for i, upgrade in ipairs(self.upgrades) do
-		love.graphics.draw(upgrade.sprite, x, y, 0, self.scale, self.scale)
-		x = x + self.direction * (size + spacing)
+	local previousFont = love.graphics.getFont()
+	love.graphics.setFont(self.quantityFont)
+
+	for _, buff in ipairs(self.upgrades) do
+		local isConsumable = buff.type == BUFF_TYPE.ITEM
+		local opacity = isConsumable and buff.quantity == 0 and 0.45 or 1
+		love.graphics.setColor(1, 1, 1, opacity)
+		love.graphics.draw(buff.sprite, x, y, 0, self.scale, self.scale)
+
+		if isConsumable then
+			local quantity = tostring(buff.quantity)
+			local textX = x + buff.sprite:getWidth() * self.scale - self.quantityFont:getWidth(quantity) - 3
+			local textY = y + buff.sprite:getHeight() * self.scale - self.quantityFont:getHeight() - 3
+			love.graphics.setColor(0, 0, 0, 1)
+			love.graphics.print(quantity, textX + 1, textY + 1)
+			love.graphics.setColor(1, 1, 1, 1)
+			love.graphics.print(quantity, textX, textY)
+		end
+
+		x = x + self.direction * size
 	end
 
-	-- reset
+	love.graphics.setFont(previousFont)
 	love.graphics.setColor(1, 1, 1, 1)
 end
 
@@ -794,16 +811,21 @@ function BattleState:simulateBattle()
 	self.actionFeedback.oponent:show(toPrettyActionName(oponentAction), mapToColor(oponentAction))
 
 	if turnResult ~= Combat.ONGOING then
-		self.finalResult = turnResult
-		self.hasEnded = true
-		self.endTimer = 2
-		self.musicFadeTimer = self.musicFadeDuration
-		if turnResult == Combat.WIN then
-			self.oponent:setAction(ACTION.DEAD)
-            Stats.incEnemyDefeated()
-		else
-			Player:setAction(ACTION.DEAD)
-		end
+		self:finishBattle(turnResult, 2)
+	end
+end
+
+function BattleState:finishBattle(result, delay)
+	self.finalResult = result
+	self.hasEnded = true
+	self.actionsEnabled = false
+	self.endTimer = delay
+	self.musicFadeTimer = self.musicFadeDuration
+	if result == Combat.WIN then
+		self.oponent:setAction(ACTION.DEAD)
+		Stats.incEnemyDefeated()
+	else
+		Player:setAction(ACTION.DEAD)
 	end
 end
 
@@ -1053,6 +1075,20 @@ end
 
 -- Detecta o input do usuário
 function BattleState:keypressed(key, scancode, isrepeat)
+	-- DEBUG: atalho temporário para avançar pelas cenas durante os testes.
+	-- remover na versão final
+	-- if key == "f8" then
+	-- 	if not self.hasEnded and not isrepeat then
+	-- 		self.oponent.hp = 0
+	-- 		if self.oponent.shielded then
+	-- 			self.oponent.shielded = false
+	-- 			self:onShieldBroken(self.oponent)
+	-- 		end
+	-- 		self:finishBattle(Combat.WIN, self.musicFadeDuration)
+	-- 	end
+	-- 	return
+	-- end
+
 	if not self.actionsEnabled then
 		return
 	end

@@ -10,12 +10,13 @@ local function resolveFontSize(size)
 end
 
 function returnFont(size)
+  size = resolveFontSize(size)
   if fontCache[size] then
     return fontCache[size]
   end
 
   local fontPath = "assets/fonts/Cute Dino.ttf"
-  local font = love.filesystem.getInfo(fontPath) and love.graphics.newFont(fontPath, resolveFontSize(size)) or love.graphics.newFont(resolveFontSize(size))
+  local font = love.filesystem.getInfo(fontPath) and love.graphics.newFont(fontPath, size) or love.graphics.newFont(size)
   fontCache[size] = font
   return font
 end
