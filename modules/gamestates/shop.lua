@@ -14,13 +14,18 @@ local Stats = require("modules.stats")
 ----------------------------------------
 
 local ITEMS_FOR_SALE = 3
-local DESCRIPTION_WIDTH = 200
-local DESCRIPTION_Y = 510
-local DESCRIPTION_GAP = 60
-local DESCRIPTIONS_TOTAL_WIDTH = 0
-local DESCRIPTION_START_X = 0
 local PURCHASED_SLOT_SIZE = 60
 local SHADER = brightnessShader
+
+local function getShopLayout()
+    if isMobile() then
+        return { slotScale = 1.0, columnSpacing = 300, cardScale = 0.75,
+        cardTop = 372, cardOffsetX = 157.5, textWidth = 270}
+    else
+        return { slotScale = 0.75, columnSpacing = 260, cardScale = 0.55,
+        cardTop = 410, cardOffsetX = 120, textWidth = 200}
+    end
+end
 
 ----------------------------------------
 -- Entidade DescriptionCard
@@ -29,9 +34,15 @@ local SHADER = brightnessShader
 local DescriptionCard = {}
 DescriptionCard.__index = DescriptionCard
 
-function DescriptionCard.new(item, pos)
+function DescriptionCard.new(item, columnCenterX, cardTopExtra, layout)
 	local card = setmetatable({}, DescriptionCard)
-	local x, y = pos.x, pos.y - 40 * Resolution.getUIScale()^3
+
+	-- f mantém as proporções do cartão do desktop (escala 0.55) quando ele é ampliado
+	local f = layout.cardScale / 0.55
+	-- columnCenterX está em coordenadas do jogo; o cartão é desenhado no canvas de UI
+	local left = columnCenterX / Resolution.getUIScale() - layout.cardOffsetX
+	local top = layout.cardTop + cardTopExtra
+	local x, y = left + 20 * f, top + 60 * f
 
 	local function updateFunc(text, _, descCard)
 		local color = text.color or { 0, 0, 0, 1 }
@@ -42,12 +53,12 @@ function DescriptionCard.new(item, pos)
 	card.item = item
 	card.type = item.type
 	card.title = Text.new(capitalize(item.id), 24, { 1, 1, 1, 1 }, { x, y }, nil, false, math.huge, updateFunc)
-	card.description = Text.new(item.description, 16, { 1, 1, 1, 1 }, { x, y + 30 }, nil, false, math.huge, updateFunc, DESCRIPTION_WIDTH)
+	card.description = Text.new(item.description, 16, { 1, 1, 1, 1 }, { x, y + 30 * f }, nil, false, math.huge, updateFunc, layout.textWidth)
 
-	card.scale = 0.55
+	card.scale = layout.cardScale
 	card.bg = love.graphics.newImage("assets/UI/shop/description_" .. item.type .. ".png")
 
-	card.position = { x = x - 20 or 0, y = y - 60 or 0 }
+	card.position = { x = left, y = top }
 	card.alpha = 0
 	card.fadeDuration = 0.2
 	return card
@@ -93,20 +104,23 @@ local ItemSlot = {}
 ItemSlot.__index = ItemSlot
 
 function ItemSlot.new(item, pos, index)
+    local layout = getShopLayout()
+
 	local slot = setmetatable({}, ItemSlot)
 	local yOffset = -50
 
 	slot.item = item
 	slot.position = { x = pos.x, y = pos.y + yOffset }
-	slot.scale = 0.75
+	slot.scale = layout.slotScale
+    slot.ropeScale = 0.75
 	slot.buyed = false
 	slot.selected = false
 
 	slot.rope = love.graphics.newImage("assets/UI/shop/rope_0" .. index .. ".png")
 	slot.frame = love.graphics.newImage("assets/UI/shop/frame_0" .. index .. ".png")
 
-	slot.ropeW = slot.rope:getWidth() * slot.scale
-	slot.ropeH = slot.rope:getHeight() * slot.scale
+	slot.ropeW = slot.rope:getWidth() * slot.ropeScale
+	slot.ropeH = slot.rope:getHeight() * slot.ropeScale
 	slot.frameW = slot.frame:getWidth() * slot.scale
 	slot.frameH = slot.frame:getHeight() * slot.scale
 
@@ -130,7 +144,7 @@ function ItemSlot:draw()
 	love.graphics.setColor(1, 1, 1)
 
 	-- corda
-	love.graphics.draw(self.rope, self.position.x - self.ropeW / 2, self.position.y, 0, self.scale, self.scale)
+	love.graphics.draw(self.rope, self.position.x - self.ropeW / 2, self.position.y, 0, self.ropeScale, self.ropeScale)
 
 	local baseCenterX = self.position.x
 	local baseTopY = self.position.y + self.ropeH - 20
@@ -310,23 +324,21 @@ function ShopState:load()
 
 	self.sounds.bell:play()
 
-	local function blinkUpdate(text, dt)
-		local alpha = text.color[4] or 1
-		alpha = alpha + dt * 0.5
-		if alpha > 1 then
-			alpha = 0.5
-		end
-		text.color[4] = alpha
-	end
+	-- local function blinkUpdate(text, dt)
+	-- 	local alpha = text.color[4] or 1
+	-- 	alpha = alpha + dt * 0.5
+	-- 	if alpha > 1 then
+	-- 		alpha = 0.5
+	-- 	end
+	-- 	text.color[4] = alpha
+	-- end
 
 	local padding = 30
-	self.texts.warning = Text.new(isMobile() and "Tap an item twice to buy" or "Press space to buy", 48, { 1, 1, 1, 1 }, { uiW - 150, uiH - padding }, nil, true, math.huge, blinkUpdate)
+	self.texts.warning = Text.new(isMobile() and "Tap an item twice to buy" or "Press space to buy", 48, { 1, 1, 1, 1 }, { uiW - 150, uiH - padding }, nil, true, math.huge, nil)
 	local textWidth, textHeight = self.texts.warning:getDimensions()
 	self.texts.warning.pos[1] = uiW - textWidth / 2 - padding
 	self.texts.warning.pos[2] = uiH - padding - textHeight / 2
 
-	DESCRIPTIONS_TOTAL_WIDTH = DESCRIPTION_WIDTH * ITEMS_FOR_SALE + DESCRIPTION_GAP * (ITEMS_FOR_SALE - 1)
-	DESCRIPTION_START_X = (screenW - DESCRIPTIONS_TOTAL_WIDTH) / 2
 
 	-- debug buffs
 	-- Player:getBuff(initShield())
@@ -359,7 +371,10 @@ function ShopState:randomizeItems()
 	local pickedIndexes = {}
 	local pickedCount = 0
 	local maxForSale = math.min(ITEMS_FOR_SALE, #self.allItems)
-	local descriptionStartX = (Resolution.getUIWidth() - DESCRIPTIONS_TOTAL_WIDTH) / 2
+
+    local layout = getShopLayout()
+    local screenW = Resolution.getGameWidth()
+
 	while pickedCount < maxForSale do
 		local index = math.random(1, #self.allItems)
 		if not pickedIndexes[index] then
@@ -369,13 +384,10 @@ function ShopState:randomizeItems()
 			table.insert(self.itemsForSale, self.allItems[index])
 
 			-- coluna centralizada
-			local columnCenterX = DESCRIPTION_START_X + DESCRIPTION_WIDTH / 2 + (pickedCount - 1) * (DESCRIPTION_WIDTH + DESCRIPTION_GAP)
-			local descriptionCenterX = descriptionStartX + DESCRIPTION_WIDTH / 2 + (pickedCount - 1) * (DESCRIPTION_WIDTH + DESCRIPTION_GAP)
+            local columnCenterX = screenW / 2 + (pickedCount - 2) * layout.columnSpacing
 
-			-- descrição
-			local descX = descriptionCenterX - DESCRIPTION_WIDTH / 2
-			local descY = DESCRIPTION_Y + (pickedCount == 2 and 60 or 0)
-			local desc = DescriptionCard.new(self.allItems[index], { x = descX, y = descY })
+			-- descrição (a coluna central fica 60 mais baixa, como a corda dela)
+			local desc = DescriptionCard.new(self.allItems[index], columnCenterX, pickedCount == 2 and 60 or 0, layout)
 			table.insert(self.descriptionCards, desc)
 
 			-- slot
