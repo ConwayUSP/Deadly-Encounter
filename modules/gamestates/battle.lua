@@ -11,6 +11,7 @@ require("modules.fs")
 
 local BattleUI = require("modules.gamestates.battle_ui")
 local Resolution = require("modules.resolution")
+local Stats = require("modules.stats")
 
 -- Escala em 70% o layour da batalha caso em PC, mantém a escala em 100% no mobile
 local function getBattleLayout()
@@ -658,6 +659,7 @@ function BattleState:restartGame()
 	self.oponentPool = generateOponentPool()
 	self.battleNum = 1
 	self.oponent = self.oponentPool[self.battleNum]
+    Stats.reset()
 	Player:reset()
 	self:reset()
 end
@@ -785,6 +787,7 @@ end
 function BattleState:simulateBattle()
 	local turnResult = simulateTurn(Player, self.oponent, self.hist)
 	self.hist:addSnapshot(Player)
+    Stats.incTurn()
 
 	local oponentAction = self.oponent.action
 	self.actionFeedback.player:show(toPrettyActionName(Player.action), mapToColor(Player.action))
@@ -797,6 +800,7 @@ function BattleState:simulateBattle()
 		self.musicFadeTimer = self.musicFadeDuration
 		if turnResult == Combat.WIN then
 			self.oponent:setAction(ACTION.DEAD)
+            Stats.incEnemyDefeated()
 		else
 			Player:setAction(ACTION.DEAD)
 		end
@@ -961,6 +965,7 @@ function BattleState:update(dt)
 	end
 
 	if not self.hasEnded then
+        Stats.tick(dt)
 		local pt = self.timer
 		self:syncTimerToMusic(musicPosition)
 

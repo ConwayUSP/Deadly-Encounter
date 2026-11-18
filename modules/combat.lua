@@ -2,6 +2,8 @@
 -- Estado Confronto
 ----------------------------------------
 
+local Stats = require("modules.stats")
+
 Combat = {}
 Combat.WIN = "vitoria"
 Combat.LOSS = "derrota"
@@ -233,6 +235,9 @@ function useItems(creature, oponent)
 	for _, buff in pairs(creature.inventory.usedQueue) do
 		if buff.type == BUFF_TYPE.ITEM then
 			buff:activate(creature, oponent)
+            if creature == Player then
+                Stats.incItemUsed()
+            end
 		end
 	end
 end
@@ -320,6 +325,11 @@ function causeDamage(target, dmg, attacker)
 	end
 
 	GAMESTATE[CTX.BATTLE]:addDamageOrHealingText(target, -dmg)
+    if target == Player then
+        Stats.addDamageTaken(dmg)
+    else
+        Stats.addDamageDone(dmg)
+    end
 
 	if target.hp - dmg <= 0 then
 		local defibrillator = target:hasUpgrade(UPGRADE.DEFIBRILLATOR)
