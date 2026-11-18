@@ -323,17 +323,17 @@ function ShopState:load()
 
 	self.sounds.bell:play()
 
-	local function blinkUpdate(text, dt)
-		local alpha = text.color[4] or 1
-		alpha = alpha + dt * 0.5
-		if alpha > 1 then
-			alpha = 0.5
-		end
-		text.color[4] = alpha
-	end
+	-- local function blinkUpdate(text, dt)
+	-- 	local alpha = text.color[4] or 1
+	-- 	alpha = alpha + dt * 0.5
+	-- 	if alpha > 1 then
+	-- 		alpha = 0.5
+	-- 	end
+	-- 	text.color[4] = alpha
+	-- end
 
 	local padding = 30
-	self.texts.warning = Text.new(isMobile() and "Tap an item twice to buy" or "Press space to buy", 48, { 1, 1, 1, 1 }, { uiW - 150, uiH - padding }, nil, true, math.huge, blinkUpdate)
+	self.texts.warning = Text.new(isMobile() and "Tap an item twice to buy" or "Press space to buy", 48, { 1, 1, 1, 1 }, { uiW - 150, uiH - padding }, nil, true, math.huge, nil)
 	local textWidth, textHeight = self.texts.warning:getDimensions()
 	self.texts.warning.pos[1] = uiW - textWidth / 2 - padding
 	self.texts.warning.pos[2] = uiH - padding - textHeight / 2
