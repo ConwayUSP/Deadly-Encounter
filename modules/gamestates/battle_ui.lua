@@ -1,12 +1,24 @@
 local Resolution = require("modules.resolution")
 
+local STOPWATCH_FEEDBACK_DURATION = 0.6
+local STOPWATCH_FADE_DURATION = 0.2
+local STOPWATCH_OPACITY = 0.25
+local STOPWATCH_SCALE = 1.35
+
 local BattleUI = {}
 BattleUI.__index = BattleUI
 
 function BattleUI.new(battleState)
 	local ui = setmetatable({}, BattleUI)
 	ui.battle = battleState
+	ui.stopwatchTimer = 0
 	return ui
+end
+
+---@param sprite love.Image
+function BattleUI:showStopwatchFeedback(sprite)
+	self.stopwatchSprite = sprite
+	self.stopwatchTimer = STOPWATCH_FEEDBACK_DURATION
 end
 
 function BattleUI:update(dt, musicPosition, isBattleActive)
@@ -17,6 +29,8 @@ function BattleUI:update(dt, musicPosition, isBattleActive)
 	if battle.flashTimer and battle.flashTimer > 0 then
 		battle.flashTimer = math.max(0, battle.flashTimer - dt)
 	end
+
+	self.stopwatchTimer = math.max(0, self.stopwatchTimer - dt)
 
 	battle:verifyActionSlots()
 	battle:updateActionSlots()
@@ -108,6 +122,15 @@ function BattleUI:draw()
 		end
 	end
 
+	if battle.counter.isActive and self.stopwatchTimer > 0 then
+		local sprite = self.stopwatchSprite
+		local pos = battle.counter.pos
+		local fade = math.min(1, self.stopwatchTimer / STOPWATCH_FADE_DURATION)
+		local alpha = STOPWATCH_OPACITY * fade * fade * (3 - 2 * fade)
+		love.graphics.setColor(1, 1, 1, alpha)
+		love.graphics.draw(sprite, pos.x, pos.y, 0, STOPWATCH_SCALE, STOPWATCH_SCALE, sprite:getWidth() / 2, sprite:getHeight() / 2)
+		love.graphics.setColor(1, 1, 1, 1)
+	end
 	battle.counter:draw()
 
 	-- O clarão é uma sobreposição de tela e também fica fora da câmera.

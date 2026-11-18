@@ -1132,7 +1132,11 @@ function BattleState:setAction(num)
 	if actionChanged and Player.action == ACTION.ATK or Player.action == ACTION.HEAVY_ATK then
 		local stopwatch = Player:hasUpgrade(UPGRADE.STOPWATCH)
 		if stopwatch then
+			local wasTimedRight = Player.timedRight
 			stopwatch:activate(Player, self.timer)
+			if not wasTimedRight and Player.timedRight then
+				self.ui:showStopwatchFeedback(stopwatch.sprite)
+			end
 		end
 	end
 
