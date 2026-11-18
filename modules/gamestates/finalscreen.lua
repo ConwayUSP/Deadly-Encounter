@@ -5,6 +5,7 @@ require("modules.engine.text")
 require("modules.utils")
 require("modules.fs")
 local Resolution = require("modules.resolution")
+local Stats = require("modules.stats")
 
 ----------------------------------------
 -- Entidade Final Screen (representa Victory Screen e Death Screen)
@@ -25,7 +26,7 @@ function FinalScreen:new(prompt, timer)
 		prompt,
 		32,
 		{ 1, 1, 1, 0 },
-		{ width / 2, height * 0.75 },
+		{ width / 2, height * 0.85 },
 		0,
 		true,
 		math.huge,
@@ -35,6 +36,16 @@ function FinalScreen:new(prompt, timer)
 			text.color[4] = alpha
 		end
 	)
+
+    screen.texts.stats = Text.new(
+        "Run duration: " .. Stats.getTimeAsString(),
+        46,
+        {1, 1, 1, 1},
+        { width / 2, height * 0.75 },
+        0,
+        true,
+        math.huge
+    )
 
 	return screen
 end
@@ -51,6 +62,7 @@ end
 function FinalScreen:draw()
 	self.texts.prompt:draw()
 
+    self.texts.stats:draw()
 	-- reset de cor
 	love.graphics.setColor(1, 1, 1, 1)
 end
